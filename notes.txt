@@ -1,0 +1,166 @@
+# LECTURE 2
+    Lexical Semantics: Meaning of word
+        lemma(title), sense(different meaning within diff context), definition
+        connections between words (synonyms, opposites, etc)
+        taxonomy - absract(general words) to concrete(specific).
+        Semantic frames and roles -> to denote perspective or participants in an event.
+        
+    Problems with discrete repr:
+        one hot vector(give each word separete numbers on vectors for 1): sparce, subj, expensive, hard to guess relationships.
+        goal: to map similar meaning workds closely, can use KNN to find close words. Standard way to repr mean ing in NLP.
+
+    Training of word embeddings:
+        Wrod2vec: 
+                Cbow(opp of skip gram) - from many guess one.
+                Skip Gram: use imput to geuss bunch of words (define a sliding window and train a classifier with padding, 
+                            to predict correct token for all sectences. roughly self supervised.)
+                            - some words used a lot, learn a lot of repr in language.
+                            - others used less, more concrete, meaning very unique.
+                            uses ONE HOT + embeddings to train/predict surrounding/similar word repr.
+                            - loss function log probablity(dot product to predict similarity between surrounding words and 
+                                    normalize with all words -> expensive so approx by negative samplinig(sampling without main 
+                                    sliding window but vocab is not all unqiue - but can use freq for norm) idea grab random samples 
+                                    to do sum of pairwise normalizaiton -> convert to binary classification-easier to optimize and 
+                                    learn repr) then use some gradient decent to predict.
+                            - evaluation: check quality: instrinsic eval- test repr align with intuition about word meaning, using cosine similarity of word embeddings.
+                                        extrinsic eval: test weather repr good for downstream tasks, such as taggin, parsing, QA or some task used by some model.
+    Text Classificaiton: generative vs discriminative.
+            generative - prob joined with and ouput, argmax over joint prob.
+                - prob of input first, probably more expensive.
+            discriminative - prob output given the inout data, argmax over conditional prob.
+                = directly models prob with output space.
+                - BOW(bag of words) discriminative model, does not care about word order. get score to prob then gradient descent. but for neural networks can use sequential order.
+                
+            logistic regression good for binary classification. sigmoid for binary, softmax for muti-class to repr to valid probabilty.
+            gradient descent - gradient of loss function and use chain rule. to move to direction that decreases the loss. lr is the speed of movement.
+
+    Q: norm samlnig denom is some sort of avg to shorten error?
+    Q: so do we use freq when norming or no? since Vocab is not unique?
+    Q: how does input become smaller dim(PCA?)?
+
+    HW1 classification example:
+        Continous bag of words(CBOW) has lower dimension, just bag of words(BOW) is one hot size of each lookup is number 
+        of vocab. + linear layers. then softmax function and optimize with gradient descent and regulizer.
+# LECTURE 3 : Language Modeling
+    Ngram Language model, Neural Model, Evaluation
+
+    define: final end of sentence token is special. 
+        problem is probability of grabbing sentence from 
+
+    What can it do: score sentences(high/low), or generate sentences(prob: of next work/token)
+
+    N-gram Language model:
+        every word is independence, and can use maximum likelihood MLE to see how likely eaach word is supposed to appear(by counting).
+        - allows prediction of whole sentence too.
+        - want to score with unknown read words,  interpolations w/ UNK model enables to allow low frequency unknown words.
+
+    higher order model: limit context length to smaller window(n-1). MLE is count and divide. linear interpolation to deal with zero counts.
+        sometimes add one smoothing, every word adds 1 count.
+
+        other smoothing techniques: additive, discounting, kneser-ney. most of them to address zero count issue.
+    
+    Limitations of Ngram:
+        Ngram cannot share strength among similar words, need class based language models.
+        cannot condition on context with intervening words. need skipgram language model.
+        cannot handle long-distance dependencies, need cache,trigger, topic, syntatic moels, etc.
+
+    Linear models:
+        cant learn feature combinations, logical errors - cant be expressed by linear features, use neural language models.
+
+    Neural ngram model(since proximating current based on previous, but using neural model to learn embeddings):
+        convert word predition to discriminative text classification.
+
+        feed-forwrad neural language models. - uses previous words, looks up word embeddings, combine linear vector to get intermediate 
+        vector + bias to get score and then get probability to get next token.
+            (grab two d dim vectors and grad a d vector absed on that, convert to v(vocab) dim, softmax to prob)
+        
+    
+        Solves: simililar word/context issues, intervening words, cannot handle long-distance dependencies.
+
+    neural networks allow design of complex functions.
+
+    PROS ngram: models are extremely fast, better at modeling low frequency - TOOL: kenlm
+
+    ngram lm(non parametric-non training just statistics), prefix context table and counts will be massive to store. to compute just retrieve row.
+
+    neural counts but also compresses, memorizes and generizes.
+
+    Non-parametric: • Memorize low-frequency pairs of (prefix, next word) • Cannot generalize to unseen pairs • Interpretable & easy for incremental updates (insert/delete/replace)
+    Parametric: • Learning from data-driventraining • Good generalization tounseen pairs • Black-box & expensive forparameter updates withforgetting issues
+
+    Why llms so powerful: 
+        - Architecutre, MLP then RNN and now transformers to capture sectquecnes and effecienceis to scale to 100B+.
+        - Pre-training on massive raw texts.
+        - Fine-tuning on language intrustiosn with supervised learning or RLWF.
+
+    LM Evaluation:
+        - log prob of sentence over test corpus, aggregate them log likelihood score(not comparable to different test sets), so we normalize it by count, turn into per word cross entropy and grap perplexity.
+
+        unknown words: 90% of words are low freq, cut size of corpus(by unk or rank threshold), treat 90% as unknown words, to save compute.
+            - subword tokens can handle loss of accuracy by using sub tokens instead of throwing tokens away, also handles mispellings.
+        
+        IMP: cannot compare models over different vocab. 
+            Or more accurately, all models must be able to generate the test set (it’s OK if they can generate more than the test set, but not less)
+            • e.g. Comparing a character-based model to a word-based model is fair, but not vice-versa
+
+# LECTURE 4: Recurrent Neural Network 
+
+    General knowledge:
+    - when working with minibatches. need to add artificial token to make sure each sentence has same length. add paddings. (PER BATCH ONLY)
+        - when computing avg we should zero out padding tokens, sum out embeddings over word and divide by number of real tokens-non paded length.
+
+    Sequential:
+        long distance dependencies in language can be compicated, nouns, or references such as 'it'.
+    
+    Recurrent Neural Networks:
+        Approaches:
+        1. variable size inputs: add zero paddings and concatate + Linear layer -> simple but downt works for longer sequences. massive ff layer.
+        
+        2. feed one word to each feed forwawrd layer : for each token dot product with weight + bais, and pass to next token. 
+                (idea compress and pass info to next token to carry on, avoids super long W matrix.)
+                do not need to pad senteces, and each ff layer is smaller than previous method.
+                maiin idea for RNN, we can have many layers as we want, variable depth network. remembers information along time dimention.
+                we can predict per token vs label, grab loss and sum them up for total used in backprop. backprop updated weights(rnn) not inital hidden layer passed on.
+                backprop over time sequence - issue vanishing/exloding gradients. if we do back prop since al weights are shared.
+                    - handling vanishing gradient: LSTM - long short term memory. make additive connections between time steps. gate to contril info flow, and 2 mem cell to store short/long term info.
+                        - forget gate-how much forget long time mem, input gate-how much to add to long term mem, compute new values to add to memory, output gate-how much to pass on from long term to short(next step).
+                        - all is passed to next time step(short term - only some portion of long term-higher freq of updating, allows prediction per token in seq).
+                    - handling exploding gradient: gradient clipping(general idea can be applied to others). we norm by some number before updating, basically making it take shorter steps, instead of massive ones in gradient descent.
+
+                exposure bias/distributional shift: training we pass in ground truth per token, but during test we pass on predicted words to predent/finish sentence. since its a prob dist model might sample an unknown sequence.
+                    - happens for generative tasks, not classification.
+                    - to handle:some reinforcement learning or scheduled sampling. first train on ground truth for some iter but gradually switch to taking its own input, and always continue like that. 
+                                        - cannot start with pass in its own input, or else it will learn garbage. start with supervised then reinforcement function.
+                                        - handles model robustness to handle new sequences, not necessarily accuracy. 
+
+                                        Q: do we have to write our own feedback func to say weather new seqs in training during exploration are good or not?
+                                            - model is baked in to explore some similar but wrong words but should later still learn the proper sequence. so overall message is not lost. not necessarily RL but SL + noise.
+                
+                Applications:  represent a whole sentence to make pred, represent a context within a sentence(read context up intil that point).
+                                - can do 1-1, 1-many, many-1, many-many, many to many fully conencted.
+                                    image captioning, sentence classification, machine translation, sentance tagging.
+                                
+                                - can do binary or multi class prediction.sentence repr for retrival, sentence comparison, etc.
+                                - sequence labeling, calculating reprs for parsing.
+                                - language modeling - tagging task, each tag is next word. is a auto regressive model(curr depends on prev token.)
+
+                                bidirectional rnns - to handle two directional languages, also llms use it, also useful for sentence repr.
+
+
+                What can LSTMS learn: 
+                ...
+
+                Efficiency tricks: minibatching makes thigns faster. harder in rnns than feed forward networks. since each word depends on prev word. (better to separe padding and end of sentence token)
+                                - using a masking token to zero out paddings. to exclude it when calc loss. and divide sum of loss by real tokens in minibatch.
+                            
+                            bucketing/sorting - put sentences of same length with same minibatch. but can result in decreased performance.
+                
+                handling longer sequences: cant fit massive lang in mem, truncated segments. separete it into 2 passes but connect end of 1st to start of 2nd's hidden layer.
+                                            - backprop individually though.
+                
+                Gated Recurrent Units: LSTMS but way more efficient. with better parameters.
+                architecture search - basic lstms pretty good(the various combinatoins gates searched.)
+
+                Multi-Scale Pyramid RNNS: one for word, one on top for sentences, one for paragraphs.
+
+# LECTURE 5:
