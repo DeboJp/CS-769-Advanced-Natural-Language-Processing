@@ -163,4 +163,66 @@
 
                 Multi-Scale Pyramid RNNS: one for word, one on top for sentences, one for paragraphs.
 
-# LECTURE 5:
+# LECTURE 5: Attention and transformers
+    Encoder - Decoder models: used to be popular, nowadays only decoder(encoder merged within). prob, compressing sentences of varying length to single vector, hard to decode later on.
+        - idea use mulitple vectors bsed on length of sentence: attention.
+    Attention: embed vocab to dict, query a target element, pick relevant sources by comparing query/key-value based on confidenc. summarize relevant work tokens into a contetxt vector, used to predict target token.
+        encoder gives keys and vals to each word based on learned functions, decoder creates queries to check/find relevant key. we dont use argmax on keys (not differentiable(is discrete)) instead use softmax (to smooth attention dist), is differentiable, allow backprop.
+        after grabbing query results, we grab norm attention weights, create a context vector with weights + base word vectors, and pass it though a FF network + predicting base word vectors to predict per label. 
+            Feed Forward:
+            - multi layer perceptron great for large data (applied position-wise after attention)
+
+            Score (attention alignment):
+            - dot product; if too large dim, use scaled dot product
+            - bilinear (general form): score(q,k) = qᵀ W k
+            - MLP/additive (Bahdanau): score(q,k) = vᵀ tanh(W_q q + W_k k)
+    
+    transformers: adv: really fast, only matix, parallel sequetial processning, efficeint.
+        - self-attention - allwos parallel comp of all tokens.
+            attends to itself most, but also givs attention to other words/elements in sentence, context sensitive.
+            using embeddings to grab key,query,value. use querry to grab ino from each other embedding, use softmax on all. use values and softmax dist to grab sum. saically summarizes its own info and other words info. can stack multiple self-attention layer.
+        - multi headed attentions - allows querying multiple positions at each layer.
+            multiple attention heads focus on different parts of sentence(can encode in parallel).used several heads per set, t heads to create a single d(t) dim vector.
+            add nonlinearity - FF(MLP), so output is no longer liner to input, add capacity to model to make it complex. we stack self-attention(multi head) and non-linear layer N times to increase capacity.
+        - position encoding - addds position ino for each token.
+            model perspective no position info, since parallel. add soe info function at the very beginning to augment input where word is location.
+            naive = integer index and another dim to input. issues embedding vector also numeric, so may cause instability.
+            we use frequency based functions, sigmoids with diff frequency. differnet dimentions say differnet info. 1st even odd indicator, layer first-half etc. each word have added dims. combination if some of those dims give positional info. typically concatate with word embedding info and pass them as same.
+            another idea add learnable parameter for every input. but fixed size for length, need to estimate or model might not work. typically more optimal but more complex.
+            typicall absolute not useful, relative to other words more useful.
+        - adding non-linearrities - combiens features from self-attention layers.(expl above)
+        - masked decoding - prevents attention lookups in the future tokens, to avoid predicting future tokens.
+            avoids looking into future tokens, masks attention to future tokens(keys).(step before making softmax dist). future token will not affect context.
+
+        self attnetion: combine words
+        multi-head = learn independ head information
+        norm dot prod atten - to remove baias in dot prod calc
+        prod encoding - without RNN, to udnerstand location.
+
+        Training tricks: layer norm - avoid number blowouts, training schedule - adjust from adam (study show needs some warmup from small to large then exp decay to find optimal lr), llabel smoothing - insert some uncertainty to training proc(allows sampling since finding a single point is rly hard).
+
+        Attention hard - slow at test, doesnt necessarily outputform RNNs on decoder side for seq2seq taks (transformer need a lot more data), hard to train on small data.
+
+        EXTRAS:
+        Additions: can add markov properties i.e. add attention matrix. encourage sparcity: instead of softmax to smooth out, ask model to pick a few tokens instead each time.
+            incorporating markov properties: attention from last time correlated with attention from this time. add attention from last for next deision.
+
+            Hard attention: instead of softmax, use zero-one decision. harder to train, needs Reinforcement learning, perhaps helps interpretability.
+
+        Better Training: 
+            neural models tend to drop or repeat content, add penanty if attention not 1 over each word.
+
+            attention is not alighment, often blurred, off by one on matrix for translation, and other tasks too.
+
+            supervised - pretrained + supervised is strong alignment model. but tons of data, model can generally learn too.
+
+        What else:
+            Copy Mechanism: model can not only generate from vocab, but also copy tokens directly from input/history, final prob = mix of generate prob + copy prob
+
+            hierarchical attentions: attention over words then attention over sentences then document. grab context of document.
+
+            attention allows various modalities, vision, text, sound/freq, etc.
+
+            multi source attention.
+
+            basic idea of attention: idea similar to info retrival.
