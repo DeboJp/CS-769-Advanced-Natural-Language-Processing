@@ -226,3 +226,93 @@
             multi source attention.
 
             basic idea of attention: idea similar to info retrival.
+
+# LECTURE 6: Pre-traind Sentence and Contextualized Word Reprs.
+
+    why pre-training, 
+
+    non-Contextualized - word2vev, seq ,etc.
+    contextualized - bert etc.
+
+    pass non-context though an multi layer perceptron to turn into contexualized?
+
+    why pre-trainng: learn multi-tatsk learning, transfer learning - finetuning
+
+    NLP TASKS: text - language modeling, Natural occuring data - machine translation, hand-labeled data - most analysis tasks.
+        - 1. Perform multi-tasking when one of your two tasks has greatly fewer data, 2. Perform multi-tasking when your tasks are related
+
+    multi-task leaning, train reprs to do well of multiple tasks at once, i.e. tagging, language modeling.
+        - should be table to train encoder on large dataset for one obj, then use same encoder+finetuning later for other tasks such as tagging.
+
+    3 main objtives - define model, define training obj, data.
+
+    end-to-end - is done if easy or has enough data points. else always use pre-training.
+
+    Usage of sentence reprs: 
+        Sentence Classifcation - sentiiment, classify, binary labels over sentence, etc.
+        Paraphrase identification/Semantic Similarity - compare meaning semantically between phrases
+        Textual Entailment - learn implications(Entailment), Contraditions, Neutral.
+
+    Pretraining Techniques:
+        (idea model pretrained for cetain task, then encoder/embeddings used from that to be used in another task)
+        eg 1: Google: model: LSTM, obj: LM obj, data: Classification data itself or amazon reviews. downsteam on text classficaion, init weights and continue training.
+        eg2: GPT: Masked self-attention(transformer), LM obj, Data: BooksCorpus. downstream some task finetuning other tasks additioanl multi-sentence training.
+        eg3: Auto encoder + Transfer: LSTM, from single sentenve vec re-construct the sentence. Data: clasification data itself or amazon reviews. downstream on text classification init weights continue training.
+        eg4: Skip-thought vectors(sentence level contet): lstm, predict surrounding sentences, data books, imp because of context. downstream sentence pair classification. 
+                (Similar to Skip-gram that predict the surrounding words by the center words)
+        eg5: paraphrase based contrastive learning: try several model, predict weather two phrase are paraphrases or not, data: paraphrase db from bilingual data.downstream: sentence similariy, classification, 
+                (LSTMs work well on indomain but word averaging generalizes better.)
+
+        deep-fusion - concat sentence for grabing self-attention(sentiment - close, deep,repr, efficient)
+        late-fution - do encoding on ecah then gram.(sentence classification - sparse, more time?)
+
+        eg6: Entailment + Transer:Bi-LSTM + max pooling, (use human labels for pretraining) supervised training for a task such as entailment learn generalizable embeddings. Data: Stanford NLI, MultiNLI, 
+                (Tends to be better than unsupervised objectives such as SkipThought)
+
+    Context word repr:
+        Central Word Prediction:
+            context2vec: Bi-directional LSTM , Predict the word given context, data: 2B word ukWaC corpus. downsteam  use vectors for sentence completion, word sense disambiguation, etc
+            ELMo: Model: Multi-layer bi-directional LSTM • Objective: Predict the next word left- >right, next word right->left independently 
+            Data: 1B word benchmark LM dataset. Downstream: Finetune the weights of the linear combination of layers on the downstream task
+
+    Masked Word Prediction:
+        Masked Word Prediction (BERT):model: Multi-layer self-attention. Input sentence or pair, w/ [CLS] token, subword representation, obj: Masked word prediction(mask certain words ask predict) + nextsentence prediction((are they close or far))
+            Data: BooksCorpus + English Wikipedia (16GB)
+        
+            select 15% of words randoly, replace with mask 80%. time, 10% replace random(to simpulate noise), 10 no change. predict all maskd words given surrounding context. like context2vec but better suited for multi-layer self attention.
+
+        Consecutivee Sentence Prediction: classify two sentence as concsec or not. data = 50% of trainngin from openbooks is consecutive, use unique cls token to include meaingn of two sentence. mask some sentece in sentence and sep tokens to separaee sentences.  and binary predictions.
+
+        Hyperparameter Optimization/Data(RoBERTa) - same as BERT, but trainlonger and drop sentence prediction objective. but with much larger data. empirically much better.
+            - sentence prediction is easy(doesnt help) if mask token prediction is done well(hard-loss goes down slow).
+
+        Distribution Discrimination -ELECTRA: same as bert,Sample words from language model, try to discriminate which words are sampled. discriminator used as word encoding model later on.
+            (masked sentence passed in generator, which predicts/sample words, discriminator then predicts if original word passed or not.) 
+            (better than bert, more gradient updates to model since per token labeled, bert only does 50% as their tasks masks 50% only)
+
+        Permutation-based Auto-regressive Model+ Long Context(XL-Net):Same as BERT, but include longer context, Predict words in order(itself and before), but different order every time(train sentences with different permutation orders: some noise but able to learn differnt perspectives). Data: 39B tokens from Books, Wikipedia and Web 
+            - later version, instead of shuffing randomly, it group phrases to avoid random places, avoid learning wrong word combinations in sentence.
+        
+    Compact Pre-trained Models: 
+        ALBERT (Lan et al. 2019): Smaller embeddings,and parameter sharing across all layers, but the same inference time as the BERT counterpart 
+        DistilBERT (Sanh et al. 2019): Train a model to match the distribution of regular BERT
+   
+    SUMMARIES:
+        Which model:
+            - Averaging word embeddings can outperform more complex models, especially on out-of-domain data.
+            - BERT shows the strength of bidirectional transformers but does not benchmark against LSTM models like ELMo due to lSTMs being constrained by computational efficiency and scalability.
+            - With BERT-like training data, their ablations show architecture and training tweaks can yield further improvements.
+
+        Which Training Objective? chatgpt
+            - When using the same data, bidirectional language modeling outperforms a machine translation encoder.
+            - Next-sentence prediction, combined with masked LM, seemed helpful in the original BERT paper(boosting perf), but later work (e.g., RoBERTa) found it unnecessary and even limiting when scaling training.
+            - Next-sentence prediction provides little to no benefit and can be dropped.
+
+        Which Data?
+            - Preliminary results suggest more data generally improves performance.
+            - Scaling with large web data yields gains but inconsistently.
+                Data with context is probably essential/best.
+
+        Pre-trained Large Language Models: 
+            GPT-3: similar to GPT-2, but pre-trained on lot more data using autoregressive LM objective. Demonstrate good few-shot in-context prediction ability.
+            ChatGPT: init form GPT-3 fine-tuned with Reinforcement Learning from Human Feedback (RLHF).
