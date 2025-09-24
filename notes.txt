@@ -316,3 +316,105 @@
         Pre-trained Large Language Models: 
             GPT-3: similar to GPT-2, but pre-trained on lot more data using autoregressive LM objective. Demonstrate good few-shot in-context prediction ability.
             ChatGPT: init form GPT-3 fine-tuned with Reinforcement Learning from Human Feedback (RLHF).
+
+# LECTURE 7:Parameter-efficient Fine-tuning - and other ways to bypass costly fine-training.
+    PEFT - Fine tune a small amount of mdoel params, instead of entire model. on a small dataset of downstream tasks. Other parameters are frozen.
+        pors - reduce compute and sotrage costs, 
+        mitigate catasprohic forgetting
+        easy to update model to new data and facts
+        better perfm on low data
+        comparable perom to finetuning
+    
+                                PEFT                    | Full Fine-tuning
+    Learnable parameters:         A small subset        | Entire model
+    Training Performance:         Close to fine-tuning  | …is fine-tuning :P
+    Training Data:         Small                        | Large
+    Training Time:         Faster                       | Longer training time
+    Overfitting / forgetting: Less prone to overfitting | More prone to overfitting
+
+    3 ways to adapt model capacity(Three Computation Functions): 
+        function composition - add extra functions (combime multile as well) on top on NLP layer, (new function layer)
+            - i.e. Adapters - additional modeluse in layer - match or outperfms fine tunign.
+        input comp - combine data as input to create longer sequence. has effect on self-attention layer. (adapt data)
+            - i.e. prompt tuning, prefix tuning (beginning of sentence instead of end)- context window of model is increases - good for large models
+        parameter comp - low rank extra params in middle of the model, in matrix math area to increase wight by adapter wight. (adapt model with addl func)
+            - i.e. Lora/QLora - no increase in model size, good.
+
+    Function Composition:
+        Adapter - adapter layer after each FF layer (before layer norm if there). Adapter itself is an multiplayer -2 layer perception.
+            - each layer is a matrix which transforms the input in new space. adjust embedding direction. helsp reroute the data embeddings to what the "upper layer expects."
+            - increase capacity of model to learn new date.
+            - vs. full finetunign. small data better prfm with adapter, and about equal perfm with large data. better accury with fewer num of params updated. embeddings repr shifts little(origial meaning holds?) vs finetuning.
+        
+        IA^3: Add learnable params to self-attention layer instead on NLP, - model selects params that are moe and less imp for given downstream task.
+            - adds learnable layer to MLP layer too.
+
+    Input Composition:
+        Prompting with text: prepending instructive words before actula test input. 
+            - text tokens as learnabale params.
+            - trigger mdoeling to learn tasks- 
+            - models are sensitive to the formulation of the prompt and to the order of examples
+            - Prompt Tuning: 
+            Prompt tuning: only updates a small task-specific prompt parameters(learned, i.e. extra params added to left of embedding) for each task, enables mixed task inference.
+                - during testing, add learned prompt to input.
+                - as model size increases the perf of prompt tunign matching full fine-tuning.
+                    - naivly few shotting model is still wrose than both.
+                - only updates prompts, not x inputs concated.
+            Prefix Tuning - more effective to capture gradient updates over layers.
+                - adds larnable params at the beggingin on the input sequence of all layers. (multi layer )
+                - better in low data regiuemes, better in general too - full finetunign.
+                - only prefix updated, rest model frozen.
+    
+        Q: inputs trained to or just added to front.
+            - no inputs trained, empty/learnable parameters added to front after capturing sentence embedding
+        Q; prompts multiple voab or just 1
+            - 1 or multiple your choice? More training?
+        Q: Cost of adding adapters and input prompting compute costs?
+            - there is added costs/params to both methods, but negligible.
+        Q: Combination of these better in some instances or typically by itself better.
+            - not necessarily, main idea is to find the sensitive spots and adjust them. There is a paper that is trying to find the spots and test multiple methods/combination to see if any better. Auto smth?
+        Q: does fine tuning increase inferece speeds compared to original foundation model?
+            - not inference speed, just training speed.
+        Q: Does lora have any impact on forgetting? since we are adding to params? 
+            - if matrix conflicts with other for the updates, depends on tasks if the knowledge confict w/ pre-tain knowledge. All methods can have forgetting no gurantee/non-gurantee.
+        Q: Qlora explanation - quantization has some lsoss, previous does it affect performance? what dooes the bits reprepsent.
+            - bits represent weights, we shink the specificity of the weights to a smaller "scientific number", not massive loss in performance if quantization done properly.
+    Parameter Composition:
+        Low Rank Adaptation (LORA)- approx self attenupdat of lernable weight by a low -rank matrix. initi update is 0, after training updates are added 
+                back to original checkpoint. so at inference cost of the updated checkpoint is samea s orig checkpoint.
+            -   save a lot of params, no actual overhead in inference. small overhead to do computation during inference.
+
+        LoRa works better than other PEFTs (adapters, full finetunign, - prelayer, etc).
+        why works: full tuning update typically happen in some low rank space, so we can try to update with low ranks as well.
+        pretraining provides strong initization in D dimm space, model only needs to explore subspace during fine-tuning to learn final weights.
+        Reduces VRAm consuption, fewer gpus and fewer I/O operations.
+        lora still reqs forward comp and back prop. so lora speeds up 25% but noto 10x compared to fine-tuning
+        
+        QLORA - Convert information in a high-precision data type to a low-precision data type, Allows training a LLM in a single consumer GPU 33B in a single 24GB gpu.
+            - lower precision avg. nowdadays. use fload 8 or mixed precision. - typically dont need very accurate steam for numbers.
+            takes 32 bits to some rounded 8 bit representations, then after gradient updating on smaller bit dequant it back to fp32 representations.
+            Double Quant: quantize the fp32 constant inside the fp32 bit, to further save memory on top of quantizing weight matrix blocks. dequant will have an extra nested step as well.
+            quantization hsa some information loss, so we do blockwise quantization after flattening matrix(to avoid the max working on a large matrix), to minimize loss.
+                - more sensitive to Hyperparameter, perm not same as full-finetunign due to agressive compression.
+            can match certain fine-tuning methods with good methods.
+
+        Check picture grpah to get and idea of eah model acc vs num of param.
+            - depends on usecase which method better than others.
+
+        Other ways to bypass expensive fine-tuning:
+            - PEFT is one way to adapt model to downsteam taks
+            - prompting incontext learning - doesnt require furthier training.
+            - Retrieval Augment Generation(RAG) to steer model perfm - need to update model to use actual data.
+            - Model editing - tuning free approach to modify behavior
+                - computationally innexpensive, targetted modification to params. - if we understand causal mechanisms on internal layer
+                - cons - kinda like blackbox. hard to understand?
+                - Editing knowledge editing - knowledge store or update weights(locate and edit, constrained tuning)
+                    behavior - inference time , activation editing, decoding time.
+            
+        Training models are sene as vectors: has additive propertives, skills embeeded in linear subspace, can combine to explore anothter trajectoty.
+            - can take negation of task to unlearn, 
+                - Can reinforce certan skills, or reduce certain skills. with combinatiosns (+ then (-), etc.)
+        
+        can steer model on self atten layer, modify attention heads. need good understandign of heads to steer or remove heads.
+            - (incase its persay learning harmful info/hateful speech) can do targetted ediitng as well.
+            - targetting heading better than fine tuning and other approaches as well.
