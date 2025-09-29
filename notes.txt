@@ -418,3 +418,76 @@
         can steer model on self atten layer, modify attention heads. need good understandign of heads to steer or remove heads.
             - (incase its persay learning harmful info/hateful speech) can do targetted ediitng as well.
             - targetting heading better than fine tuning and other approaches as well.
+
+# LECTURE 8: Instruction Tuning and Multitask Learning
+    several tasks in nlp, only text-for language modeling.Naturally occurring data: e.g. machine translation. Hand-labeled data: e.g. most analysis tasks, 
+    multitask: we can train models on many data to do well on several tasks.
+    pretrain finetune: we can pretrain on one task and then finetune for later.
+    prompting: Train on LM task, make predictions in textualized tasks.
+    instruction tuning: Pre-train, then fine-tune on many different tasks, with an instruction specifying the task.
+    
+    Basic Fine Tuning: Build a model that is good at performing a single task
+    Instruction Tuning: Build a generalist model that is good at many tasks
+
+    Examples to build/evaluate machine understanding instead of just memorization.
+        give context free question answering dataset/open-book QA, answer a prediction wihtout any specific groundnig knowlegde.
+        give contextual question answering/machine reading/closed booking qa: Answer a question about a document or document collection
+        Code generations: generate code from natural language command.
+        Summarization: single doc-compress longer doc to shorter, multidoc-compress multiple to one.
+        Info extraction: entity recog - identify which words are entities. Entity Linking - connect entity mentioned to another knowledge bases. 
+            Entity coRef - find which entity in input correcpond to each other(him mean obama, etc.). Event Regoc/linking/coRed - identify what events occurred.
+        Translation: from one lanuage to another. quality assessment done using similarity to ref translation.
+        General Purpose Benchmarks - collection of general NLP tasks of past decade used to benchmark. to guage ability across broad range of tasks.
+
+    MultiTask Learning: Perform multi-tasking when one of your two tasks has fewer data : High-resourced language → low-resourced language, General domain → specific domain.
+
+    Domain - one task but data might be from several areas. sometimes labeled other times now.
+        in practice: Content, what is being discussed.Style, the way in which it is being discussed. Labeling Standards, the way that the same data is labeled
+
+        Types of shift: Covariate Shift: The input changes but not the labeling. Label Shift: The output dist diff (which also implies the input changes). Concept Shift: The conditional distribution of labels changes (e.g. different labeling standards).
+
+        Generalization: 
+            Domain adaptiation-train on many adapt to a target domain at testing. 
+                Supervised adaptation: train w/ target-domain labeled data. Unsupervised adaptation: train w/o target-domain labeled data
+            Domain robustness-train on many doms perform well on all doms.
+                esp minority doms.Zero-shot robustness to domains not in training data.
+        Detection: Binary classification: detect whether a test example is an OOD example or not.
+        
+        Multilingual learning also a multi task learning.
+
+        i.e.: Languages as Domains: Multilingual learning is an extreme variety, different language = different domain
+            Adaptation: Improve accuracy on lower-resource languages by transferring knowledge from higher-resource languages 
+            Robustness: Use one model for all languages, instead of one for each
+
+        Earlier Method on Multitask Learning Feature Space Regularization: Try to regularize the features spaces learned to be closer to each-other.
+            encourage rep learning. classifier to learn class label on top of adversarial feature extractor for downstream tasks. from end of featrue extractior we also put domain classifier to encourage((to check)) domain specific learning(and to avoiding mushing everything/all domain in same space).
+            idea: want the encoder to learn representations useful for the task. But also want the encoder not to “overfit” to one domain if you want transfer/invariance
+                label classsifier minimizes loss from both feature extractor and label classifier to make feature predictions on downstream labels.
+                domain classifier minimizes loss on bomain classifier but maximiszes loss on feature side, to encourage features that are hard for domain classifer to distinguish - domain invariant.
+                    i think the idea is if the feature extractor learns representations that confuse the domain classifier, then those features must capture what’s common across domains, making them more general and transferable.
+                Encoder basically minimizing label loss while maximizing domain loss so those features hide domain cues and become domain-invariant.
+            if domain specifc invariance is good, can be confident label classifier will also be able to generalize better.
+            neding underlying similarity to pass down task - cant work in unbalanced, un related, etc. can have neg transfer-degrade perf. need underlying assumption of some similarity/structure to enable transfer. 
+
+        Simpler Multi-task Learning Method(data manipulation): i.e.Adding Domain Tags: add tags to indicate what domain or language let model know aht it would want it to do later. Model still doing task prediciton. introduces a small number of params.
+
+    Instruction Tuning:
+        T5: Text-to-Text Transfer Transformer -Supervised training on many NLP tasks, Control a single model to do tasks following the instructions in the prompt.
+        T0 model (Sanh et al 2021) from Hugging Face& google: Multitask Prompted Training Enables Zero-shot Task Generalization. i.e. trained on summarization, sentiment, question answering but was able to do inference on natural language inferece
+            can improve zero-shot perfomrnace than gpt zeroshot and gpt fewshot.
+            FLAN Collection: instruction tuning dataset.
+            models ex: Flan T5, LLaMa2 Chat, Mixtral Instruct
+
+    Synthetic Data generations: 
+        Self-Instruct: to generate syn data and train model again.
+            Models sees all tasks, generates synthetic tasks instructions, then ask model to follow isntruction some classifications, and create outputs(ouptut first/input first), then filtered ans passed back in pool again.
+                i.e.Input-first: Ask an LLM to come up with the input fields first based on the instruction, then produce the output. (or can use some label and then ask to generate text based on that label i.e. sentiment, etc)
+                    Output-first: Generate the output label, and then generate the input based on the output.
+    
+        Evol-Instruct:  idea of evolve instruction into more complex instructions.
+            filter out invalid instruction, find similar instruction but not smae intent, etc.
+                indepth - you can rewrite given prompt into more complex version to make tasks more challengin even though same intent.
+                in-breadth evolving - draw inspiration and create a completely new prompt same domain but even more rare.
+            used to create new instruction pool to increase reasoning examples, deepening, complicate, concretizie, add constraints, etc.
+
+    Knowledge distillination - large model to small model to run deployable env.
