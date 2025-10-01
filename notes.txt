@@ -319,11 +319,11 @@
 
 # LECTURE 7:Parameter-efficient Fine-tuning - and other ways to bypass costly fine-training.
     PEFT - Fine tune a small amount of mdoel params, instead of entire model. on a small dataset of downstream tasks. Other parameters are frozen.
-        pors - reduce compute and sotrage costs, 
-        mitigate catasprohic forgetting
-        easy to update model to new data and facts
-        better perfm on low data
-        comparable perom to finetuning
+        pros - reduce compute and sotrage costs, 
+            mitigate catasprohic forgetting
+            easy to update model to new data and facts
+            better perfm on low data
+            comparable perom to finetuning
     
                                 PEFT                    | Full Fine-tuning
     Learnable parameters:         A small subset        | Entire model
@@ -514,6 +514,7 @@
             prefix prompt - x token placed at end, (use autoregressive movel to predict)
 
         Design Considerations for Prompting:
+            (look at Fig 2: image for considerations)
             ■ Pre-trained Model Choice
                 popular choises: 
                     (Left-to-Right) Autoregressive LM (useful for larger scale lms, counting based, good for language generation, works well w prefix prompt, use at test time, no need to train - i.e. GPT 1, 2,3,4),
@@ -575,7 +576,6 @@
                     Fixed-prompt LM Tuning: LM Params Tuned - PET
                     Prompt+LM Fine-tuning: LM Params Tuned + Additional Prompt Params + Prompt Params Tuned - PADA
 
-            (look at Fig 2: image for considerations)
             General Guideline: 
             If you have lots of training samples?:Promptless Fine-tuning, Fixed-prompt Tuning, Prompt+LM Fine-tuning
             If you have a huge pre-trained language model: Tuning-free Prompting
