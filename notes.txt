@@ -560,7 +560,7 @@
                 Graph of Thought: can self look over node, back track, and can aggregate chains to single node. single output(divide-conquer,sorting, etc.).
             ■ Expanding the Paradigm
                 Multi-Prompt Learning:
-                    Prompt Ensembling:using multiple unanswered prompts for an input at inference time to make predictions . Stabalizing performance, Alleviate the cost of prompt engineering.
+                    Prompt Ensembling:using multiple unanswered prompts for an input at inference time to make predictions . Stabalizing performance, Alleviate the cost of prompt engineering(typical methods:unifrom averaging, weighted averagin, majority voting).
                     Self-Consistency Prompting: ask model to sample diverse reasoning tasks, dif temps & other Hyperparameters during decoding and check final answer to see which answer is dominant.
                     Prompt Augmentation: add examples ot help model understand what objective is.
             ■ Prompt-based Training Strategies:
