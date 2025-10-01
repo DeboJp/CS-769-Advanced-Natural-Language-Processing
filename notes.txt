@@ -491,3 +491,97 @@
             used to create new instruction pool to increase reasoning examples, deepening, complicate, concretizie, add constraints, etc.
 
     Knowledge distillination - large model to small model to run deployable env.
+
+# LECTURE 9: Prompting and Zero-/Few-shot Learning
+    Four Paradigms of NLP Technical Development
+        ■ Feature Engineering, popular around 2015
+            fully supervised learning, neural network based models to train classifier.
+            manual features - svm, crf.
+        ■ Architecture Engineering - learn feature than hand design feature 2013-2018
+            lstms, cnn, gru, etc. dont need to manually define features. modify model architecture.
+        ■ Objective Engineering - pretrain, fine tune , 2017-now. self supervised
+            bert -> finetuning. less work on architecture but engineer objective functions. self training w contrastive learning,etc.
+            still need to init full model and add shallow layer on top.
+        ■ Prompt Engineering - pre-train, prompt, predict, 2019-Now.
+            engineer prompts to predict in zero shot or a few shot.
+            chatgpt, 3,4.
+
+    Prompting: encouraging a pre-trained model to make particular predictions by giving a prompt specifying the tast to be done.
+        general workflow: prompt addition, answer prediction, answer-label mapping.
+
+        prompt addition: input and template with x that model predicts, then map predicted x as specific sentiment for example positive.
+            cloze prompt  - predict x like before.(w llm)
+            prefix prompt - x token placed at end, (use autoregressive movel to predict)
+
+        Design Considerations for Prompting:
+            ■ Pre-trained Model Choice
+                popular choises: 
+                    (Left-to-Right) Autoregressive LM (useful for larger scale lms, counting based, good for language generation, works well w prefix prompt, use at test time, no need to train - i.e. GPT 1, 2,3,4),
+                    Masked LM: bidirectional, great for NLU tasks. Bert,Roberta, etc. use Cloze prompt, language understanding.,
+                    Prefix LM: combination of mased and autoregressive, prefix prompt, Corruption operations can be introduced when encoding X,
+                    Encoder-decoder LM: A denoised auto-encode, very similar to prefix lm, 2 transformer model and two different masking. bart, t5.
+                        MASS: transformer based - only predict masked spans 
+                        BART: Transformer-based - Re-construct (corrupted) original sentences
+                        mBART: Transformer-based Multi-lingual Denoising auto-encoder - Re-construct (corrupted) original sentences 
+                        UNiLM: Prefix LM, left-to-right LM, Masked LM  - three types of LMs, shared parameters
+                        T5: left-to-right LM, Prefixed LM, encoder-decoder - use instruction to explore different downstream objectives respectively(modified data format, to model learns to do multi-task instruction following)
+                        Application of Prefix LM/Encoder-Decoders in Prompting:
+                                Conditional Text Generation: □ Translation □ Text Summarization,
+                                Generation-like Tasks: □ Information Extraction □ Question Answering
+            ■ Prompt Template Engineering
+                traditionally take input and predict prob in label space. but prompt formulation deinfe input, template and predict z in template. and map predicted token to label(but how to deisgn suitable prompt).
+                    prompt shape: cloze prompt, prefix prompt(more popular)
+                    prompt template: hand crafted work, automated searches - find optimal objective function, in discrete space, or Continous space(i.e.prompt tunign- learn prompt exameple.)
+                        prompt search:
+                            prompt mining: early work, find prompts given a set of question/answers: dependency parsing to capture sentence structure(i.e. dependency tree), 
+                            Prompt Paraphrasing: paraphrase an exiting prompt to get other candidates - i.e. back translation with beam search (bidirectional translation models, translate and untranslate and try differences to get best output), 
+                            Gradient-based Search: i.e. Autoprompt. have tarining example but dont know which prompt will work best. find prompt tokens that maximize performance.
+                                Q: (confused.)
+                                    basic idea is to automatically find “trigger tokens” (words or short phrases) that, when added to an input sentence, make a pretrained masked language model 
+                                    (like BERT or RoBERTa) behave as if it was fine-tuned for a downstream task (like sentiment classification).
+                                    Autopromt searching for a few words(tokens) that manipulate model into behaving like a classifier. [input][T][T][T][T][MASK]
+                                    after it learns from a few examples, can be implemented into new input examples, to add tokens to make main model predict the masks, the prediction sentiment can be used similar to classifiers.
+                            Prompt/Prefix Tuning: obpitmize embeddings of a prompt, add embedddings later as prfix for at testing.
+
+            ■ Answer Engineering
+                We have reformulated the task! We also should re-define the “ground truth labels”
+                map vocab in answer space to downstream calssification label space. if we can learn maping, we can include mapping in prompt, or post processing(extract & maping leter.) step.
+                    Shape: token(single word), span(chunk of texts,usually used in Cloze prompt), sentence(supports structured output like xml, json, used w/ prefix prompt (seq2seq LM for generative tasks)).
+                        token,span great for classifcation, sentence great for generation tasks.
+                    Human effort: hand crafted(infine space - summarization, machine translation - map predicted tokens to final answer. finite space - text classification, sequence labeling - map finite set of words to labels), automated(discrete - Answer Paraphrasing, Prune-then-Search, Label Decomposition. continous).
+
+                Chain of thruoght prompting - (still linear just chained) Instead of searching for the answer directly, and manually add some intermediate reasoning steps in the prompt to guide the model derive the answer
+                    can improve performacne for deduction realteed tasks(i.e. maths). random generation to find path.
+                    another version self consistency with COT - multiple COTs and majority vote.
+                Tree of thought - Instead of search the answer using a linear chain structure, prompt the output sequence to follow a tree structure
+                    still need decoding process to handle performance. if certain branches thought says not possible(validation process, with LM) we prune that branch. allows backtracking
+                    can have false negatives - evaluator(LM) might make mistakes. might get stuck in loop(hand design termination), search space too large - slow and challenges api/LM/evaluator calls(too many).
+                Graph of Thought: can self look over node, back track, and can aggregate chains to single node. single output(divide-conquer,sorting, etc.).
+            ■ Expanding the Paradigm
+                Multi-Prompt Learning:
+                    Prompt Ensembling:using multiple unanswered prompts for an input at inference time to make predictions . Stabalizing performance, Alleviate the cost of prompt engineering.
+                    Self-Consistency Prompting: ask model to sample diverse reasoning tasks, dif temps & other Hyperparameters during decoding and check final answer to see which answer is dominant.
+                    Prompt Augmentation: add examples ot help model understand what objective is.
+            ■ Prompt-based Training Strategies:
+                Data Perspective: How many training samples are used?
+                    zeroshot- without explit training of LM for downstream
+                    few shot -  few training samples
+                    Full-data -  lots of training samples
+                Parameter Perspective: Whether/How are parameters updated?(examples of strategies)
+                    (Strategy: parms details - model ex.)
+                    Promptless FineTuning: lm params tuned - BERT Fine-tuning
+                    Tuning-free Prompting:  GPT 3
+                    Fixed-LM Prompt Tuning: Additional Prompt Params + Prompt Params Tuned - Prefix Tuning
+                    Fixed-prompt LM Tuning: LM Params Tuned - PET
+                    Prompt+LM Fine-tuning: LM Params Tuned + Additional Prompt Params + Prompt Params Tuned - PADA
+
+            (look at Fig 2: image for considerations)
+            General Guideline: 
+            If you have lots of training samples?:Promptless Fine-tuning, Fixed-prompt Tuning, Prompt+LM Fine-tuning
+            If you have a huge pre-trained language model: Tuning-free Prompting
+            If you have few training samples?: Fixed-LM Prompt Tuning, Tuning-free Prompting
+
+        
+
+        
+
