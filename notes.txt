@@ -582,6 +582,48 @@
             If you have few training samples?: Fixed-LM Prompt Tuning, Tuning-free Prompting
 
         
+# LECTURE 10: Learning from Human Feedback 1
+    POlicy gradient fundamentals - Reinforce, Policy optimization PPO RLHF standards, etc.
 
+    Great Challenge of LLMS: pretrained llms are great for next token predictors, but not helpful assistants.
+        behavioral gaps: factual incorrect, toxic or biased, off topic, not aligned with user intent. Goal birdge the gap.
+
+        Reinforcement learning w/ Human Feedback, train lmms to align model outputs with humans preferences/intent/values(environment). (OpenAI did this)
+            pivotal component  in success of modern instruction tuned llms, instructGPT< ChatGPT 4, Claude, Llama 2/3, deepseek math.
         
+        pariwise preference feedback: ask user to choose between two responces, i.e. Chatgpt.
+            RLHF applications - Helpful& Harmless, Toxicity and bias reduction, ethical alignment, Political neutrality. 
+                - personalization, persona, roleplaying, Cultural & Linguistic alignment(politeness, user style respones i.e. laymans vs professional), domain specific adaptation(align w/ domain experts law/medical/etc.)
+                - resoning - prefer more failthful resoning chain, planning optimize long term task success AUtoGPT style agents with RLHF loops.   
+                LLMS as chatbot - without environment reward are stiill hard to get meaningful responses during Human comp interaction. Challenging to simulate an evironment in an online setting.
+                    - InstructGPT-earlier version of GPT, superfized finetunign + reward dataset, then RLHF to make model.
+                        dataset - plain: ask labellers to come up with arbitary task with diversity, few-shot: ask labelers to come up with Q|R pairs of instructions. User absed: a number of use cases they asked labellers to come up with querys for these data sets.
+                            - 3 datasets: SFT data set ask labelers to write resp to given prompt. RM data: labelers give ranking of model output used to train the reward model. PPO data: data collected during RLHF without human labels, using RM to provide rewards. all colelcted for replay purpose.
+                            SFT - pretrained gpt3 model on finetune model to instructure and finetune. cross entropy to forcemodel to follow trajectory.
+                            RM:  collect comparison data and train a RM. smaller lM to rank K respones to  a prompt, pairwise comparison, pariwise ranking loss used.
+                            3rd step RL: train RL policy model initialized from SFT policy model(continue from checkpoint end of SFT), using PPO algo(stable RL model), maximize rewards and Kl penalty from SFT model.(checkpoint from RL close to SFT checkpoitns to not forget instruction following)+LM pretraining on public NLP datasets
+                            pretty much 3 steps used to train earlier chatgpt models.
 
+        Reinforcement learning:
+        REINFORCE - montecarlo version of policy gradient.
+            Markov Dcecision process(during training) - LLMas agent(looks at state), action is reponse based on policy, environment is human, and feedback is given by state(query+resp) and rewards, 
+                - state updaed as conversaion goes on. process repeats forming a trajectory(episode) of horizon t(generated long seq of dialogue history). reward uses sum of trajectory * discout factor. has artificial ending state, predefined - no rewards used ended (after deployment can sitll be adjusted to run forever).
+                MDP has 5 tuple - state space(all dialogue), action space(all model can generate), environment transition(prob of moving to new state after perforing action in state),
+                    Reward func(immediate expected reward after taking action in s), Discount factor(how much future rewards are valued with respect to immediate rewards)
+            policy is LM and environment transition(user-unpredictable/unmodelable) is independent of policy - after llm responds or user follows up.
+                goal is to maximize the expected return under policy to update gradeint by gradient ascent. hard to first compute rewards then compute gradient - expensive.
+                    -log derivative trick - has additive property, compute gradietn in tackable way.
+                    policy gradient - include gradient of polity at time t and weight it bu total reward of full trajectory tau.
+                    gradient written with - Reward to go: using full reward for each time step causes high variance. by caulalty action cannot affect past rewards, so we replace full reward by total return from time t till end of episode. 
+                        using exponentially Discounted reward to put more emphasis on recent times, and less towards future(which are less concreque), math wise discount reward would be bounded for stability, and to define markov recursion or is by definition.
+                        basic idea of REINFORCE.
+                    adding base line to reduce variable without bias. cumulative reward used as baseline to compute advantage(reward-baseline) to ground responses to a baseline(for easy vs hard tasks).
+                        weight our likelihood by Advantage. adding baseline does not affect bias for expectation. does not introduce bias but cna reduce variance.
+                        Designing baseline - predict final reward to predict current state(need to learn baseline function given params): can be done sentence level one baseline per sentence, or Decoder state level - one baseline per output action. Option 2: mena of rewards in minibatch - used in 1990, but GRPO Recurrent too(given prompt sample several response, and use mean of all rewards in mini batch).
+                            Actor-Critic - another common choice using state value function yielding the advanctage, - critic model is trained to estimate state value function PPO uses AC formulation.
+                        Want to sample multiple episode under current policy and compte avg gradient for more stable accumulative reward.then update policy by SGD, since we are working in mini-batches.
+
+                    Practical tewaks - REINFORCE is simple and unbiased but often high variance and sample inefficient, 
+                        increase batch size, norm, entropy and regularization are important hyeper params, LR and baseline quality too.
+                        using bootstrapping(Actor-critic), baselines, reward-to-go, advantage estimators, and variance reduction techniques greatly improves performance
+                    
