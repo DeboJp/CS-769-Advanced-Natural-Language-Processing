@@ -627,3 +627,84 @@
                         increase batch size, norm, entropy and regularization are important hyeper params, LR and baseline quality too.
                         using bootstrapping(Actor-critic), baselines, reward-to-go, advantage estimators, and variance reduction techniques greatly improves performance
                     
+# LECTURE 11: Project Pitch Presentations
+
+# LECTURE 12: Learning from Human Feedback - aligning llms with human intent and valies. (continued)
+
+    Proximal Policy Optimization(PPO)
+        PPO uses actor critic -  a more stable variant of policy gradient
+        idea is to replace accumilative reward with advantage. expected advantage weighted by policy. instead of fixed function we use a value paramerized func.
+        A critic (value function) estimates the value function that quantifies the expected reward (scalar) for a given state
+        A actor (policy) estimates the probability of an action given a state
+        Why? - REINFORCE is high-variance and unstable even with actor-critic, when we take large gradient step it can cause perfm forgetting.
+        a trust region: “Don’t move the policy too far in one update.” This leads to a thread of methods called Trust Region Policy Optimization (TRPO)
+            PPO is a simpler, practical version of TRPO that constrains updates to avoid drastic policy changes.
+            replaces he hard KL constraint with clipped surrogate objective. when optimizing expected advantage weihgted by ratio, we would containt ratio within a range.
+                if smaller or larger, then model is moving too far away, we clip it to a bound. with epsilon Hyperparameter, typically 0-1.
+        Full PPO obj - Policy loss(clipped surrogate) - value function loss(sq error) + entropy bonus for exploration.
+        cliping ensures stability and avoid large steps, simple no second order approx, rertains sample efficiency on policy methods, 
+            the advantage baseline keeps the gradient unbiased while reducing variance
+
+    Group relative policy optimization (GRPO)
+        PPO having a crit doubles memory/compute and value estimation may introduce variance or error.
+        GRPO removes need for separate critic by estimating a baseline using group samipiiling - generate multiple outpits per prompt
+            and compare relative to each other(uses mean and var of multiple rewards to normalize multiple advantage)
+            [comparison image shared Fig3.]
+        GRPO uses group normalization of rewards to define advantages across the outputs in one group: ONE IS GIVE SINGLE REWARD PER OUTPUT(OUTCOME SUPERVISION), or GIVE REWARD FOR EACH PROCESS STEP OF AN OUTPUT(PROCESS SUPERVISION)
+            OUTCOME SUPERVISION: compute group mean and std, each output define norm reward, that is used a advantage for every token in ouput. (method just an approximation, does not need to be accurate)
+            PROCESS SUPERVISION: rewards at each reaosning step. (can be 1 token or several grouped as reasonign step), rest same as before but applied to steps. can give reward middle of environment/sequence instead of only at end.
+
+        By normalizing within each group, GRPO encourages relative improvement rather than absolute. Even if all outputs are “bad,” it still picks the least bad ones to promote.
+            It reduces variance and avoids needing a value critic. 
+            challenge (discussed in follow-up works) is when all sampled outputs are equally bad (e.g. all wrong) — then the group normalization gives zero advantage and no gradient signal (an “all-negative group” problem) 
+            Summary:
+                removed critic - no need to estimate value function.(benefit, robust across group)
+                still needs reward function even though no reward model.
+                uses mean rewards to estimate advantage.
+    
+    Direct Preference Optimization (DPO)
+        removes the need to train a separate reward model and then run RL. Instead, it directly learns from human preference comparisons (pairs of chosen vs rejected) in a supervised-style optimization.
+        offline Rl algo, used fixed LM model to generate output use humans to collect pariwrise pref data. This dataset is used to do DPO training.
+            (online for example, LM model is always updated with rewards from pretrained reward model.)
+            ask human to collect a lot of data, and use that to update policy without needing a reward model.
+            Key takeaway: no explicit reward model, no RL loop, no value critic — it’s just a pairwise preference-based update.
+            much more computationally efficient.
+
+            Pros:
+                Offline - simpler  (no reward model training, no RL iterations, training policy model learning impricitly)
+                More stable (fewer moving parts).
+                Empirically competitive with PPO-based RLHF in many tasks 
+            Cons:
+                Assumes pairwise preference data (cannot trivially incorporate more general feedback)
+                Might be less flexible in incorporating more complex reward structures
+                
+    [High level comparison for RLHF shared FIG4.]
+
+    Research on field here:
+        Preference learning rewards modeling for value alignment, and reward for reasoning models as well.
+        research going on to combine direct pref methods with Rl based.
+        scalability and efficiency
+        multi object alighnemtn, safety 
+        open benchmarks, eval.
+        theory & convergence anlysiis
+
+        Pluralistic Preference Learning: human pref diverse and distributional, but llms are skewed to one TRUE direction.
+            Train reward with conflicting reward, where preference is switching, DPO skews towards majority pref instead.
+            Proposed distributional pref optimization GDPO, use distribution to calibrate model to not be monotonic. 
+                uses belief ratio of pref used to weight in on proposed, collected when collecting pref data as well.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Course: https://junjiehu.github.io/cs769-fall25/lectures/ 
