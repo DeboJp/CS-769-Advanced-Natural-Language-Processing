@@ -694,14 +694,68 @@
                 uses belief ratio of pref used to weight in on proposed, collected when collecting pref data as well.
 
 
+# LECTURE 13: Modeling Long Sequences 
 
+    Document Level Neural language modeling - RNN and transformer.
+        some language tasks like tagging, classification, parsing, 
+        we want to rpedict prob in long documents, 
+        1. Truncated Backpropagation Through Time(2011): do rnns in chunks, but state only no backprop beyond per state.
+        2. Separate Encoding for coarse grained doc context(2001): add summary to each RNN state which holgs glocal features, of doc. 
+            do topic modeling distribution, to thow away long context and grab main ideas to include.  
+                prev works used bag of words to compress long to bag of words.
+                other work used last hidden state.
+        3. hierchical attention netowrk(2018):
+            run world level RNNs then use inputs to run a sentence level RNN. Typically bidirectional BIGRU.
+        4. Tranformers across sectensences:
+            self attention can simply doc level context, might need to compute massive quadratic matrix. constraints on gpu memory.
+            can learn interesting phenomena i.e. co-reference.
+        5: Encode Context and Source Separately(2018) - use two tranformers one encode context and other current source. Share N-1 layers for two encoders.
+            Context - prev/next sentence or random sentence in doc. subsampling to compress seq length of context, and share params in encoder. have special layer transform layer to entegrate context with source to make prediction(to be error tolerant).
+        6: Tranformer-XL(2019): reuse Transformer arch, but allow attend to context from prev sentence.(standard encodes each chunk separately)
+            prev chunks hidden info cached and passed on when encoding next chunk. but cannot backprop though chunks, only within chunks to avoid memory issues.
+            how far can you look back? count of layers(N) times chunk size(L). (beyond just past chunk-can look really far - theoreticlaly O(NxL))
+            7: Compress prev states(2019): extention of TransformerXL, instead of holding one memory they have an extra compressed memory where the cached mamory is added as strided compression(step over prev states).
+                model can attend compressed and uncompressed to access even longer info.
+        8. Sparse Transformation(2019): add stride, only attending to every n prev states.
+            attenntion over only yhe cls tokens, skip other word tokens in sentnece. a lot info is compressed in cls token so dur attention for prev context, 
+                can just attend to cls(beginnign token). still allow full-self attention for curr attention but for past.
+            a lot of sparsity, can help save computation, another work found: if model has certain bias to attention, let model bias to wards those and fix n, and save comp as well.
+        9.Adaptive Span Transformers(2019): some might have attention head only few token, others might spread it widely. utilize it to add sparsity differently in different heads to save computation costs.
+        10. Reformer: Efficient Adaptively Sparse Attention(2020):  efficient calculation of sparse attention through
+            found some tokens have similarity(hashing technique to group similar), sort them put then into buckets and but add to buckets and add a 1 of prev to next bucket(if you want to pass info to next bucket), 
+                and do cross attention within and between buckets, the 1 in other bucket will hold info of prev bucket. helps locality sensitive hasing to efficient calculate high scoring attention wights.
+                chunking to make sparse compu more GPU friendly
+            no need to maintain token order, position embedding added. 
 
+        11.Low-rank approx: Calculating the attention matrix is expensive, can it be predicted with a low-rank matrix?Linformer: Add low-rank linear projections into model (Wang et al. 2020).
+            Nystromformer: Approximate using the Nystrom method, sampling "landmark" points(2021)
+        
+        Summary of Training-time Methods: current bottleneck of Transformer-based model for long sequences is the computation of attention matrix
+            summ - attend to past memory, sparse attention, low-rank approx.
+        
+        Long-Context Language Modeling at Inference: During pre-training, large language models (LLMs) are often using full
+                attention and a length limit (i.e., without any modification to their attentions).
+                What about extending the context length limit of a trained LLM at inference?
+                    Position Interpolation: estimate the position embedding out of the maximum length limit of tokens
+                    KV Cache: cache the important key-value pairs from the attention in the cache memory, isntead of storing all kv tokens.
 
-
-
-
-
-
+        Evaluation and LongContext Tasks:
+            Simple: Perplexity, classification over long documents
+            some previous works: 
+                - Sentence scrambling (Barzilay and Lapata 2008)
+                • Final sentence prediction (Mostafazadeh et al.2016)
+                • Final word prediction (Paperno et al. 2016)
+            Composite benchmark containing several task: Long range arena (Tay et al. 2020)
+            Needle-in-a-Haystack: Multi-document QA task: retrieve the correct answer from an long text string and measure the accuracy.
+                info hidden in long document, ask model to retrive some info that hidden info.
+                Retrieving string in a JSON object. to retrieve key value mapping.
+            LongBench: A bilingual, multi-task benchmark for evaluating LLMs in handling extended documents and complex information sequences.
+                seq up to 40,000, multi doc QA as well. few shot, synthetic, summarization, code, single long doc.
+            Entity Coreference: classifcal NLP for evaluating long context, find entity pronoun is referencing. 
+                doc level tag which pronouns refer to whom.
+                idea: Identify Noun Phrases mentioning an entity, then Cluster noun phrases (mentions) referring to the same underlying world entity. i think sequentially
+            
+            Discourse Parsing: find some discourse/logical correlation among sentences in long document. help train with relation trees among sentences in document
 
 
 
