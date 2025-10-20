@@ -757,6 +757,81 @@
             
             Discourse Parsing: find some discourse/logical correlation among sentences in long document. help train with relation trees among sentences in document
 
+# LECTURE 14: KV Cache in LLMS
+
+    KV cache for efficient inference of LLM
+        Long context is needed - 4k to 1M , agents with long history and long doc understanding.
+
+    KV cache - stored intermediate key and value computations for reuse during inference. adds complexity to code implementation, increase memory requirement(GPU), speeds up inference.
+        example, augoregressive decoding has redundancy token generations passed to next to generate later token, for kv cache store prev decoding step key val instead of recomputing for next generation, result: each generation step computes one K/V(using cached K/V for prev steps) instead of its K/V and forward pass calculating for all prev token.
+        sacrifices memory to gain speedup(reduce computations), cant do best of both.
+
+        Transformer attention and KV cahe mechanics: at time t new tokens KV vectors are calc and appended to the cache. everytime decoding we reuse it instead of recomputing.
+    
+    LLM inference Bottleneck - to store vectors to allow largen context size instead of recomputing all prev keys. Reuses cachced per layer key/value tensors for past tokens. 
+        Memory grows goes fast O(LxDmodelxNheadsxNlayers) limits. i.e. LLama 3B model 1M token, most of memory used by KV cache(120GB). but 64K(8gb) is half of weights(16gb)
+        more than 100K tokens KV cache dominates GPU and makes single GPU inference impossible, need to distribute to other GPUs(transfer loading, network transfer)
+        obj: compress or selectively prune KV cache with iminmal loss in model accuracy(called KV cache compression).
+    
+    KV Cache Compression 
+        Prefill stage: process the input, produce and store KV tensors for all input tokens.
+        Decoding stage: for each generated token, model attends to cached K/V.
+        implication -> some methods operate at prefill(compress stored cache), some during decoding(online eviction/compression)
+        
+        Compression strategies-
+            - token selection
+            - quantization/low-bit/reduce token footprint
+            - low-rank & franctorization(approx KV matrix)
+            - encoding/ gzip-style tensor encoders for network transfer
+            - Streaming & architectural approaches (pattens observed i.e. attension sinks, heads splitting, etc)
+            - Redundancy - aware / semantic chunkking
+        
+        Eval metric: memory reduction, generation quality(perplexity, task accuracy, human eval), latency&throughput(prefill time, tokens/sec decode), implementation complexity and comabitlity(no finetune vs requires fine tune)
+        
+        Mehtods: 
+            H20: Heavy hitter orachle - obsereve atention mass is highly skewed - small subset of tokens accrue most attention called heavy hitter.
+                identifies these tokens and keep KV cache, discard or compresses others. Works as an online selection approach, compute token importance and main a compact cache memory.
+                how to find heavy hitters: compute accumulative attention score for each KV vector, keep the top k scoring KV vectors.
+                Can reduce 90% of KV cache memory while keeping ~78% accuracy compared to full KV cache.
+                memory efficient, simple to interate into inference loops. Required scoring token-some overhead, can fail if nonheavy tokens are crucial for downstream reasoning.
+            StreamingLLM: (2024) key empirical osb - model develop attention sinks - specific tokens typically earlier ones will attact a lot of attention. common among many model familities.
+                in later layers model focuses all attention to early tokens, model just throws attention to earlier since it doesnt know.
+            
+                    sink reason unknown(if model doesnt know if relevant, chooses to give attention to earlier one.)
+
+                combine a rolling sliding window of recent tokens with a tiny set of sink tokens kept indef in cache.
+                
+                generate token beyond token length pre-training token length comparision of methods: - dense attention perpelxity incerases drastically(Cant handle), sliding window attention 
+                    calculation inaccuracy since cache window in first few sink layers - input length exceeds cache size., streamLLM keeps sink in KV cache as window moves. 
+
+                enables coherent generation with bounded memory, no model fintuning, implementationn - keep global sink KV entried + windowed KV, small engineering changes to attention computation.
+            
+            SnapKV: llms knows what you are looking for before generation, key obs aech attention head consisntly focises on specific parts of prompts,. tHis pattern can be obtained from obs window at the end of prompt.
+
+                Needle in a haystack - test to retrive imp info from long context used to measure performance. original mode can only support 33k tokens but with this can support almost 10x more with few accuracy drops.
+
+            Pyramidal Info Funneling(2025): Uniform Distribution in Bottom Layer in earlier layer(linear line) but as layers go on we find localized attention(stairs), also see attention sink only happens on earlier layers.
+                existing works in kv compression: dense full kv cache, streaming lLM,SnapKV and H2O (fixed kv cache per layer on attention score within insruction window).
+                observation, higher layer with fewer KV cache budget and lower layers with more KV cache budget. each layer will have differnet budget, allocated adaptively across layers.
+                i.e.instruction tokens retain the KV cache for the last few tokens , higher layer few tokens. lower layer more budget.
+                has hyperparameters to find shape for budget distribution. compute important score for each token on attention, slect k token based on imp score to retain each layr used for allocation.
+
+                compared to al lmethods - method outperform all others by significant margins as budget size increases(avg KV per layer).
+                extreme memory efficient scario, PyramicKV outperforms baselines on some tasks by large margin.(incontext prediction as well)
+                    in needle-in-a-haystack can match 99.6% performance of full KV if kv Size =64 can still match. inrease kv size 100%.
+                    (KV Cache Factory - easy to use KV  cache compression) - github codebase to play around with optimization.
+
+            R-KV (2025) redundancy - aware KV cache compression for REASONING MODEL
+                handle overthinking ussue: existing KV cache compression leads to loss of info for reasoing steps. for agetic, reasoning, etc.
+                causes increases rethinking step is KVcache strategeis like SnapKV. Idea: Eastimate the information absed on comparing all the key pairs, 
+                    compute cosine similarity across differnet keys, use that to estimate an imprant score and redundancy score to selec keyval vector to store in memory.
+                    helps with overthinkging
+
+        Open research problems: 
+            provable gurantees - hard to obtain reason, when can we safely remove token without loss of capability/info.
+            more adaptive way for compress for training and finetuning.(curr only inference time - maybe if in training can be passed down)
+            multimodal kv cachce and cross modal reundancy handling ((i.e. video, image -slight movements different))
+            better benchmarks for loong reasoning under compressed KV.
 
 
 
