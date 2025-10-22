@@ -833,6 +833,81 @@
             multimodal kv cachce and cross modal reundancy handling ((i.e. video, image -slight movements different))
             better benchmarks for loong reasoning under compressed KV.
 
+# LECTURE 15: Retrival Augmented LMS: (PAST,Present,Future)
+    Retrival Augmented LMS can reduce hallucinations in long-tail knowledge
+        adaptations w/o training
+        can swap data store(incrementally or fully) to keep up to date.
+        more parameter efficient to language model(similar compute, rag performs better)
+
+        before: 2017
+            intitial stidied for NLP, mostly QA tasks.
+                cannot use small dataset to learn all QA so RA was proposed.
+            2019:
+                ORQA, RALM RAG,...
+
+            2020,2021 KNN LM, RETRO - new achitectures for RAG LMS.
+
+            2020 chatgpt got access to search engine to grab most recent info, and got better than most QA model.
+
+        current:
+        2023 - incontext retrivalAugmented LMS - use fof the shelf lms and retrival models
+
+
+        in the past, model based on where we incorporate retrieved ocntext. typically input side, feel to LM. Motivated several(i.e. REALM) classical models to retrieve index of relevant value/text band that answers question. not gnereation.
+        meta proposed RAG - instead of masked LM to predict text span, we use autoregressive BART to retrieve answer in natural Language. qeustion encoded to vector, use MIPS(knn) to find k paragraphs, feed it to generator(LM) and marginalize probability y given x.
+            RAG performs much better than REALM and other baselines on QAs.
+        pros and cons of inpu aug:
+            powerful to switch nto new LMS w/funetuning or without. can change dataset.
+            expensive to scale up to hundreds or thousands of documents, no strict attributions to specific evidences.
+                accuracy drops massively even though model can support large context.
+        
+        retro incorporating context in intermdiate layers.
+            endables more efficient incorporations of many documnetations. 
+            frozen bert model as retriever, and grab nearest neighbor. have query split, encoded layer by layer for each chunk, bert retrieved neighbors recriteved context from datastroe, cross attention(done with some ontext of past split+retrieved context, block(ATTn + RET + FF)) and integreate to next layer representation. 
+            is very good at integrating many documents, perplexity goes down. even to 1.7 trillion data points. increase retrieve doc for computing matrixs up to 40 documents best score.
+            Instruct Retro on top of Llama, good for pretraining, and multi task.
+            pros: can efficiently incoporate many paragraphs into vector than input augmentation.
+                possibly more effective than retrieval augmentation.
+            Cons: required modified underlying LMS, expensive pretraining necessary, doesnt provide strict attribution.
+
+        output interpolation: incoporate output with LMS, KKN, LMS
+            given contex, a model predictss distribution of next token.
+            knn lm computeds non parametric dist, by finding similar training context. using embedding match(instead of string match like Ngram)
+                linear interponation with LM prob and KNN prob. inporating output porbability distributions.
+            performs better than parametric LMS, and 30x larger 3B lms with larger datastore.
+            tradeoff between efficiency and domain adpataion
+            pros - provides token level attributtion, enables explicit control between parametric and non-param memorizes
+            cons - hard to scale to large retrieval corpa - num of embeddings equal to num of tokens. empirically shows limited effictiveness outside of upstreams language modeling tasks(liek reasoning and text generation.)
+
+        [check img]
+        Present: RAG with LLMs
+            simply augmenting input of LMs gives significant gain across tasks. augmenting input space of LMS give significant gain across differnt tasks. sig gains in downstream tasks like QA.
+            BM25 works best supprisingly.
+            Limitations:
+                in-context retrival somtimes generate context that is not fully supported by their citations.
+                They can easily be distracted by unhelpful context.
+                diverse tasks require diffent retrieval needs, conten, freq, may require iterative rertrival based on curr generations, questions with similar solutions may have limited semantic similarities in embedding space.
+            considerations to improve:
+                optimize 
+                    LLMS: SAIL - train model to identify which context is useful factually for answer - sythenicly generations solns with NLI model, 
+                        SELF RAG - teaches lms to adaptively retrieve and evaluate context and own knowledge for generation, another critic model to see retrieved context tags is relevant or not. if relevant tag of relevant, checks if ouputs of model and dataset are supported or not at test time.
+                        new training better.
+                    
+                    retriever: 
+                        train retriever and freeze LM. useful when only have acces to api. REPLUG: train retrievers for black box llms by minimizing kl divergence between lm nadretreiver, if corrent next token then know which doc useful. helps retreiever selects most relevannt doc.
+                        RADIT - trains both retrieever and ML on multi task objective. 
+                        better perm for combinations of off the sheflf.
+                    prompts: 
+                        training free rag system, not robust to differnet promp templates.
+                        better to structure prompts is the idea.
+                        DSPy optimizes instructions and few shot demonstrations to acheve the best performance. bayesian optmization to optimize prompt.
+                        
+
+        future: 
+            infra: challenges of scaling up datastores and increased inference time costs. better perm by increasing datastores but increases inference costs, memory, storage, etc.
+            algos: has efficiency redundancy
+            eval: rag can be useful for domain specific. going beyond domain dataset(only eveled on QA or multi choice QA, more comprehensive benchmarks), instead of merely evaling final correctnes,more holistic eval i.e. quantify citaion correction, link valid, generated supported by content or not?
+
 
 
 
