@@ -908,6 +908,63 @@
             algos: has efficiency redundancy
             eval: rag can be useful for domain specific. going beyond domain dataset(only eveled on QA or multi choice QA, more comprehensive benchmarks), instead of merely evaling final correctnes,more holistic eval i.e. quantify citaion correction, link valid, generated supported by content or not?
 
+# LECTURE 16: Mixture of Experts in LLMs
+    for scaling models
+    
+    prob training and inference cost grows as model scales.
+    key idea; not all params need to be active per input, dynamically route tokens to specialized sub-networks.
+    what is MoE - replace big FF with many big FF networks and a selceor layer, you can increase num of experts without affecitng FLOP.
+        neg log perplexity decreases as count of models increases. faster training as well x7, better training loss ~3x less FLOPs.
+
+        parallenize across many connected gpus to run faster?
+        MOEs are most of the highest perfm open models, and quick.
+
+    why not more popular, instra is compelx, training objs are heuristics and sometimes unstable.
+
+    implementation: add multiple ff/Moe Layer instead of  mlp laeyr is typical. Moe for attention heads are less common and not seen as effective.
+
+    Design Varies - routing fucntions, expert sizes, training objs.
+        routing: most boil down to tok k, either tok k of each token(expert chooses token), or tok k for experts(choose expert and optimize that - but sometimes might not be best), Global routing via optimization - very costly - not popular.
+            learned param(linear layer/router scores) to run topk used in most MoEs, 
+            another is just hashing used as common baseline.
+            RL to learn routes - used in some earliest work, ubt not common too expensive to train routers as many layers many rouuters, impractical
+            Solve a matching problem - linear assignment to resource allocate, for routing, complextity for learning selection network, also not used today.
+        
+            TopK most old and classic routing used, colms in matrix are experts, run softman then topk, then weighted FFN of top models..
+
+        variation, need to determine small shared(1-2) experts, and large expert FFN networks, and activation you can activate 2.
+        Ablations of MoE - increasing experts higher performance, shared experts doesnt see a clear improvement.
+
+        How to train MoE - we need sparsity for training-time efficiency…But sparse gating decisions are not differentiable
+            reinforcement to optimize gating policies
+                high ariance, need to add training complexity on top of MoE - hard to implementalgo, does work but not much better that its a clear win(even over hashing based), not widely used.
+            stochastic perturbations - for exploration and exploitation
+                routing decisions are stochastic with gaussian perturbations, experts a bit more robust, softamx allows model to learn ot rank k experts, adding noise a way to allow stochastic randomless: min amt of noise does not route to best, a lot of noise unstable. explored for a while but then abandoned.
+            heuristic balancing loss to encourage learning for router.(typically used, can work to stabalize the unstable nature)
+                systems efficiency requires that we use experts evenly, examples: per expert balancing same as swittch transformer, Per device balancing aggregated by device.
+                every expert needs to recieve appropriate num of tokens to calculate prob. 
+                if less token more weight bias, if more tokens certain FFN gets lower bias. to accumulate bias over iterations to balance workload over experts. Extra bias bias for each expert willg et tokens in online setting. Aggressive balancing 
+                per-expert - balance workload across mini batches per experts.
+                per device - seq wise balancing, for each seq blance tokens across different experts, i.e. each token passed to experts blananced, more aggresive version, to balance workload during training.
+                overview: if we remove heuristic blancin lloss we see model will use 2 of them, with balancing all experts get same amt of workload. all experts utilize compute properly for training.
+            traiining systems side - nice way to parallelize computation across differnet devices. good for larger scale training.
+    
+            Tricks to stabalize  - high precision for router network to make it accurate, else router wont be accurate.
+                    fine-tuning - can overfit small fine tuning data,  some sparse moe module will overfit compared to some dense model, overfitting issue, to solve use large amt of data to avoid overfitting. 1.4M supervised data used by DeepSeek to tackle this.
+                    upcycling - trainign pre-trained dense to  moe models for initializing, shows gains from base math models.
+            
+        Deep Seek Moe Architecutre 
+            V1 - standard top k routing(discussed before), standard aux loss balancing(expert+device) trained with 2 shared expert and 64 fine grained experts
+            V2 - same routing but larger params and more active params, balancing loss balacncing both comms in/out system level(among devices). topM device routing.
+            V3 - more params, more experts, have shared ffm, normalize score after topk, renorm after topk before doing weighted. aux-loss free+seq wise aux(bias updates in online setting, add/sub gamma at each iter to record what prev workload was in each workload)
+
+    Summ: takes adv of sparticy - not all inputs need the full model.
+        discrete routing is hard, but top-k heuristic version is simple enough and works.
+        lots of emphirical evidence now dayys show that MoEs work and cost effective to train for fixed FLOPs.
+        extra: n num of experts -trade-off between model capacity, training cost, inference speed, and system architecture. 
+            thresholds - score all experts and take top k, no thresholds.
+
+
 
 
 
