@@ -964,8 +964,54 @@
         extra: n num of experts -trade-off between model capacity, training cost, inference speed, and system architecture. 
             thresholds - score all experts and take top k, no thresholds.
 
+# LECTURE 17: Machine translation and multilingual NLP
+    machine translation systems - find corresponding words and meanings across languages. parallel corpus - i.e. menus english and chinese version, books, etc.
 
+    previous efforst for translatio w/ noisy channel framework.
 
+        model two translation conditional probability.
+        noise channel sample englih pass through channel to foreign, and ask listener to translate to english.
+        argmax to find most likely enligh, bayes rule to decode into p(e) xp(f|e), useful can leverage normal data + extensive english data now(LM).
+            estimate pron with MLE of counts of words. w/ parallel corpus.
+            find word alignment mapping between two languages, w/ dropping, insertion, one-to-many, many to one as well.
+                hey issue: alignment prob depend on word prob.
+
+            use EM algorithm, pick random starting param,  compute expected alighment, update no of e is translated, could e,f, and keep track of no of times e is used in training corpus count. use mle to update translation probability.
+            idea use iterative estimation for learning learning probability.
+                later used for phrase level.
+        
+        Neural Features for Translation, n-gram LM, predict next given prev n works and alighed source word and its m neighbors.
+        fully neural tranlation - no need allighhnment, compress all info to last layer and pass to decoder.
+            Attention - struggles with long sequences. lot of information loss, so look at small segments of relevant words.
+        Transformer - instead of using RNN to encode, use self-attention. can scale up model size, and make connections, higher performance.
+        Googles MultiLingual NMT, multi layer encoder and decoder, allows different languages to different languages, based on indicated language. interpolates language code embeddings.
+            showed similar language structures in different languages of similar sentenses.
+            bilingar pairs vs multilinguar - high resources, bilinguar models better, but for when low resources multilingual model better due to some transfer.
+
+        Xtreme: massive zero shot cross lingual transfer learning - benmarch how transferable are representations
+        Hybrid Mt: KNn prob and language probability used by machine tranlation -> do linear interpolation from that. 
+            prompt based mt - given translation instruct and few shot examples ask llm ot perform mt. useful for domain specific translation. will have some accuracy for terminologies, consistency. 
+                can incldue translation table as part of prompt, use corresponding tranlsation if possible to maintain correctness, while leveraging LLM translation. wokrs fairly well. can ask to leverage to optimize-more prompt creation.
+            data contamination allowed gpt 3 to learn language translation implicitly.
+            llm mt worked great for high resurce language - comparable, low resoruce NMT (Google Translate >= NLLB >> LLM-MT)models better.
+
+    Summ;
+    Comparison between SMT and NMT
+        • SMT (non-parametric model)
+            - Explicitly store translation phrase pairs
+            - High precision, but low coverage, thus poor generation
+            - Easy manipulation (insert/delete/update pairs in the translation phrase table)
+        • NMT (over-parametric model)
+            - Implicitly store translation phrase pairs in model parameters
+            - Better generation, but data-hungry
+            - Hard manipulation (catastrophic forgetting after fine-tuning, domain adaptation  issues)
+        • Hybrid MT (e.g., Retrieval-MT, Prompt-based MT)
+            - Leverage both neural network parameters and retrieved translation phrase pairs
+            - Perform better than NMT on domain adaptation when providing new domain information from retrieval.
+    
+    Future - tranaltion not just languages, but thoughts, contents, cultures, etc.
+        challenges: data scarcity, evaluative metrics.
+        some work: eval cul awarements of MT method, and compate NMT vs LLM MT.
 
 
 Course: https://junjiehu.github.io/cs769-fall25/lectures/ 
