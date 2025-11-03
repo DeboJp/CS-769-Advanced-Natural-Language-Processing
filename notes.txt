@@ -964,7 +964,7 @@
         extra: n num of experts -trade-off between model capacity, training cost, inference speed, and system architecture. 
             thresholds - score all experts and take top k, no thresholds.
 
-# LECTURE 17: Machine translation and multilingual NLP
+# LECTURE 17: Machine translation and multilingual NLP (disclaimer: not best notes)
     machine translation systems - find corresponding words and meanings across languages. parallel corpus - i.e. menus english and chinese version, books, etc.
 
     previous efforst for translatio w/ noisy channel framework.
@@ -1013,5 +1013,37 @@
         challenges: data scarcity, evaluative metrics.
         some work: eval cul awarements of MT method, and compate NMT vs LLM MT.
 
+# LECTURE 18: 
+
+    ~ first 20 mins notes no covered...
+
+    Latent Variables - useful for low resource domain, tagging, etc.
+
+    Variational Auto-encoders:we have a random variable x for our dataset, we have latent variable z sampled from a gaussian, and a deterministic funciton that maps z to data space x . we repeat this sampling in hopes to approximate X  that will be good approximates for original.
+        maximize log prob, learn posterior. Evidence lower bound <= log prob p(x).  lower bound is (reconstruction loss - KL regularizer). inequality holds for any q(z|X_ but lower bound is tight only) p =q . p is intractable.
+        regularized version of auto encoders. - includes gaussian prior constraint, compared to normalalows you to remove encoders?
+         VaE - posterier - containst to convert olatent to gaussian - decoder for reconstruction - result. we have inductive bias z. generative san sample new data.
+         AE dont regularize latent sapce, finds arbitary latent space. not generative, cant sampel new data from AE, cant compute the log likelihood of data x.
+        problem sampling breaks backprop. sampling operation non differentiable. solution is to introduce areparameterization Trick. Do sampling offline, guassian dist is written as mu+bias(learns mu+sd, essentially samples would be fit(shifted) in a new learned guassian). allows clear backprop.
+        motivaiton for latent variables: just encoder -decoder models leads to simimilar sentences no diveristy. VAEs allows you to change thes sentiment, and other variables. can contorl property of outcome.more robust to noise?
+        VAEs are very hard to train, reconstruction required good generative model, learning is hard. KL divergence is easer to learn just need to set the mu+var of Q to be same as P. overall need to learn two objective terms.
+            training mdoel learnign relys solely on decoder and ignore latent variable leads to posterior collapse.(bcz KL goes down very fast, ignores x focuses on z-mapping to gaussian)
+            solsn: multiply kl by lconstant lambda startnig at zero then gradually increase to 1. - beginning focus on reconstruction, only later on focusses on both.
+                another option: can add some constraint for KL term, KL needs to be larger than some lambda for model to start learning; thresholding. 
+                another option: introduce some noise when we want to generate the decoder, weaken decoder to make sure decoder doesnt ignore z. use word dropout to occasionally skip inputting prev word in x.
+                another : aggresive inference network learning - ask mdoel to focus on optimization of log likelihood term than KL term. can do more updates, learning rate, and do KL in less frequent manner.
+        Handdling Discrete Latent Variables.
+            more related to language modeling - z can be discrete token i.e. texts.  part of speech of a work(TOS as latent), class of a question can be modelled.
+            mehtod to handle: 
+                Enumeration - marginalize by aproximation, since exact integral is intractable. but if count of configurations z is small we can just sum all of them
+                Sampling -  if latent space is infinite, Randomly sample a subset of configurations of z and optimize with respect to this subset i.e. Minimum risk training • Maximize ELBO loss. Score function gradient estimator - (RL version but time consuimg)Policy Gradient Method • Unbiased estimator but high variance - need to control variance.
+                Reparametarization - bypass sampling process, approx sampling from categorical distribution. operation is non-differentiable. sample from approx Reparametarization gumbel dist instead, and offline. but argmax is still non-differentable, so replace it with softmax(soft approx of argmax).
+
+        Applications:
+            Symbol Sequence Latent Variables:tried learning latent sample and add contraint to control diversity of lang output; summarization, attempts to discover languages, 
+            Unsupervised Recurrent Neural Network Grammars: used to learn latent grammar for some text, fit x as input to learn some latent structure(assume grammar exists in text). sample a tree and ask model to decode sentence according to tree grammar. unsupervised way learning latent grammar
+            STRUCTVAE: Tree-structured Latent Variable Models for Semi-supervised Semantic Parsing: add tree structure to elarn 
+            latent diffusion LM:  latent continous model. use encoder to encode textt to some latent space, instead of assuming follows gaussian, it models the Latent as a sequence of signal and last seq sum of noise as a gaussian noise.
+                and backward generative diffusion process, learn to recover z by adding the noise.(learns process of remove noise). Can do autoregressive decoding, generate multiple tokens at the time, faster than just autogressive(generative is faster.)
 
 Course: https://junjiehu.github.io/cs769-fall25/lectures/ 
