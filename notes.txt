@@ -1046,4 +1046,75 @@
             latent diffusion LM:  latent continous model. use encoder to encode textt to some latent space, instead of assuming follows gaussian, it models the Latent as a sequence of signal and last seq sum of noise as a gaussian noise.
                 and backward generative diffusion process, learn to recover z by adding the noise.(learns process of remove noise). Can do autoregressive decoding, generate multiple tokens at the time, faster than just autogressive(generative is faster.)
 
+# LECTURE 19: Multimodal Machine Learning - Vision Model
+    modalities - spken/written - NLP, Vision- pictures/videos, auditory - voice,sound,music, haptics/touch, smell, taste physiological signals ECG, skin ductance, other infrared, depth images, fMRI.
+    deep learning only recent from 2010s.
+    core echallenges in Deep Multimodal ML: 
+        representation(learn for different modalities in shared space) in joint multimodal space.
+            Deep Multimodal Autoencoder - audio + video to reconstruct audio, or just audio to video reconstruction, etc. need to learn shared representation.
+            sometimes passign clean data results in just copying, so we add noise, and ask to reconstruct clean. adds noise in input space instead of latent like VAEs.
+            representation if done well will be in linear vector space, can do arithmetic -white+red, etc.
+            another way is learn each repr separately and use pairwise data to do mapping to bring repr together. underlying assumption of linear space. called Deep CCA.
+        alignment(align different modalities in same space)
+            implicit - hard objective, need to encourage interally  latent alignment to learn modalities.
+                i.e. vision language alignment - ask model to generate cross modalities attentions 
+            explicit - directly find correspondences between modalities
+                i.e. Temporal Sequence Alignment - Finding similar data across modalities, event reconstruction.
+        fusion(To join information from two or more modalities to perform a prediction task.)
+            early fusion - two modalities concat early then NN then classifier for pred.
+            late fusion - we pass each modalities indep to classifier and fuse repr at a later point.
+        translation(translate from one modalitiey to another, i.e. image to text-captioning, vise versa)
+            Process of changing data from one modality to another, where the translation relationship can often be open-ended or subjective
+            Example based - dictionary of mappings, non parametric, think fixed table.
+            model based - learn dictionary repr, use repr for new data. Training+translation.
+        Co-Learning(train modalities jointy or separetly and how to integrate them together.)
+            Transfer knowledge between modalities, including their representations and predictive models.
+            modalitity one can help modality two for predictions.
+            3 data settings, parallel(video-audio), non parallel(weak superison, unsupervisd way to find mapping), hybrid(a 3rd modality used to connect two modalities i.e. eng-chinese-japanes for eng-jpn).
+
+    Recent pre-trained vision language model:
+        CLIP: learn repr from text-img pairs. uses contrastive learning to project 2 modalities in same embedding space. Each of the pair shairng the semantic meaning, diagnoals closer to one, off diagonals are close to 0.
+            zero shot img classification, text encoder to project arb classes into text space, will help learn good enough repr for img classes to give label(final guess) for img. (similartity cosine or dot, to map to same space or somethign similar.)
+            text+image encoder, normalize then dotproduct fot nxn matric, then cross entropy loss and backprop to update. encoders are already pretrained. but also need text and img pair.
+            since linear repr, any outside if not in either pretrained encoders, model will fail, it will be out of distribution.
+            BoW repr worked better than transformer language models on zeroshot. really efficient. beat basic resnet(frozen classifer-weak)50.
+
+        Generative - DallE text to img generation:
+            stage 1 - train discrete VAE on only images - encodes RGB images to tokens, decode tokens back to RGB space.
+                learn from a code book vocab(find nearest neighbor encoding), to convert continous vision to discrete since need to map to discrete texts later and outputs will be discrete as well.
+                then learn discrete latent variables, use gumbel softmax to bypass 
+            stage 2 - train LM to generate combined seq of both text an img token.
+                concat image tokens tran ann autoregressive transformer to model joint dist  of img tokens.
+                we just put text tokens, train model to do autoregresiive predict text based on img(between encoder and decoder)
+                can use text with image decoder to RGB space.
+                    optimize evidence lower bound - reconstruction and KL loss. - in training for decoder.
+
+        Dalle (generative approach) outperforms GANs.
+            can rerank with Clip from sample of images from Dalle to get better images.
+
+        later imporved image decoder for better images.
+    
+    Stable diffusion:  add noise forward, remove noise backward process.
+
+    More recent Vision Lang Model - LLava - concat projecte img patch seq with texts.
+        key contribution, creating synthetic data from vision instruct tuning. img and have detailed desrc + bounding boxes.
+        can asked Chatgpt to create Q/A pair based on text and bounding boxed. can use pure text model to genearte data, and can later use those desc to get img for other models.
+            can do two stage, 1. pretrain projection matrix W to map img token to text embedding space. Pretrain model to desc img based on caption(orig dataset). freeze other param only train W matrix
+            2. after feature alignment, fintune matrix and decoder, keep vision encoder model. train model to predict response given image and question.
+        good for multiturn conversation models.
+    
+    InternVl family - compariable perfomranc GPT 5.
+        scale up size of VLMs, contrastime learning for image +text then share weights for prompt and generate for LLMs.(i.e. instruction following for generation)
+    Qwen3-VL uses mix of experts, and various other stuff.
+        
+
+
+
+
+
+
+
+
+
+
 Course: https://junjiehu.github.io/cs769-fall25/lectures/ 
