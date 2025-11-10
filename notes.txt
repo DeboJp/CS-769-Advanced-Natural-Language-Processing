@@ -1107,6 +1107,15 @@
         scale up size of VLMs, contrastime learning for image +text then share weights for prompt and generate for LLMs.(i.e. instruction following for generation)
     Qwen3-VL uses mix of experts, and various other stuff.
         
+# LECTURE 20: 
+    [look at slides, was sick: anlp-21-kg-llm.pdf]
+
+
+
+
+
+    
+
 
 
 
