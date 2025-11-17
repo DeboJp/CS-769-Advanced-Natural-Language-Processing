@@ -1110,11 +1110,65 @@
 # LECTURE 20: 
     [look at slides, was sick: anlp-21-kg-llm.pdf]
 
+# LECTURE 21: Reasoning and Verification in LLMs
+    hard things for reasoning: plausible vs correct, logical fallacies, error compounding, scaling law limit.
+    3 things to work on - math reasoning, automatic theorem proving, general reasoning.
 
+    Core challenge - Supervision - need to teach now to think without getting lucky.    
+        Outcome Supervision(OS) - judge the final answer only (RL from final answer-recieved award for final answer, very sparse reward doenst know which of 10 steps was wrong.)
+        Process Supervision(PS) - judge each step and check if proper derivation or not. (RL from intermediate steps - process reward model - recieved reward after each step, granular feedback - hard to have ground truth to verify step by step)
+            we train teacher model to grade per step results. - PRM 800K  dataset by OpenAI 2023 - .8M step-level feedback labels human annonated per step(positive, negative, neutral)
+        
+        PRM vs ORM: PRM works better than ORM in solving more math problems. but PRM labeled datasets prohibitively expensive.
 
+        2024-google deepmind - Automated PRocess Supervision. Omega PRM 
+            process automation with Monte Carlo: num of current rollouts from tth step vs total from tth step, metric is useful as a heuristic to know how often you will be able to sample a correct rollout.
+            to train a PRM we need to locate first error in solution efficient, given soln split it at midpoint, perform rollouts for s1:m with two possible outcomes, 
+                if cm>0 errors in 2nd half, if cm=0 error is likely first half (Monte Carlo Estimation using Binary Search) narrows down error location iteratively. Helps Avoid Lucky guesses.
+            
+            Monte Carlo Tree Search - Collect multiple PR training examples for single question, efficient way MCTS to store all rollouts durign sampling process instead of per .
+                Tree selection - prioritize supposed to be correct wrong answers during selections, supposed to be correct high MC close to 1, wrong answer rollout has wrong final aswer.
+                    prioritizes mistakes models is likely to make during search for correct path.(all wrong answers not useful)
+                update rollout branches taken that is wrong answers but highly plausible answer and update count of edges it takes to that path.
 
+                Example Tree structure of OmegaPRM: many paths, MC gives approximation of labeled datasets to train a teacher model that cna identify plausible answers but wrong answers that will be used to teach the student model right paths.
 
+        DeepSeek R1: 
+            PRM has 3 main Limitations 
+            - hard to explicitly define fine grain step in general reasoning
+            - determinign wheather the current intermediate step is correct is a challenging task, automated annotation might not have satisfactory results while manual is not bale to scale up.
+            - once a model abased pRM is introduced it leads to reward hacking, and retraining reward models.
+
+            Two limitations of MCTS when applying to llms:
+            - unlike chess where search space is well defined, for text its exponentially. larger, need careful way to define search space hard.
+            - value model will influence the quality of generation, this is hard. PRM value func for treesearch pprocess, hard for text domain.
+
+            Rule based outcome rewards acuracy rewards evaluates wheather answer is correct, and format rewards encforce model to think process inbetween. 
+                worked well in math and general reasoning tasks, suprisingly. Probably due to a strong basemodel, so when partial solution, most solution by RL is probably correct. thats why output reward works for them.
+
+        
+    Reasoning without veriable rewards. how to verify general reasoning task?
+        train models to reason well in ambiguous open ended domains, 
+
+        reinforcing general reasoning w/o verifiers - a verifier free model-this method bypasses answer verification entirely. take in question, output reasoning steps, 
+            in supervised training Dataset - use policy model to get value of thinking step based oon reference answer, and use that to provide signal for generated reasoning theorm.
+            veriFree reawrd - use the policy model to eval how likely a generated reasoning trace can lead to the correct answer - no need now for teacher model can use the policy model.    
+            works.
+
+    Learning to reason w/o external rewards - adpot self-certainty metric defined as avvg kl divergenbe between unifrom dist over vocabulary and modles next token distribution.
+        decent generalization to coding and other taks.
+
+    Summary: 
+    1. Outcome Supervision (OS): Rewarded the final answer. (Brittle, "lucky guesses")
+    2. Process Supervision (PS): Rewarded every step. (Robust, but expensive) (Paper: "Let's verify step by step")
+    3. Automated PS: Scaled process supervision. (Paper: "Automated Process Supervision")
+    4. Verifiable Rewards (RVR): Used automated outcome checks for formal domains.
+    5. Verifier-Free & Internal Feedback: The frontier. Using likelihood or "self-certainty" as a reward for general, ambiguous reasoning. (Papers: "VeriFree" & "Intuitor")
     
+
+                
+    
+
 
 
 
