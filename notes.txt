@@ -1166,18 +1166,127 @@
     5. Verifier-Free & Internal Feedback: The frontier. Using likelihood or "self-certainty" as a reward for general, ambiguous reasoning. (Papers: "VeriFree" & "Intuitor")
     
 
-                
-    
+# LECTURE 22: Virtual
 
+# LECTURE 23: Fairness and Bias in NLP
 
+    Language & People and Utility:
+        Language & People: The common misconception is that language is about words and what they mean; it's actually about people and what they mean.
+        Decisions we make about data, methods, and tools are tied up with their impact on people and societies.
+        Utility (economics): The total satisfaction received from consuming a good or service
+        Inequal allocation of utility leads to issues of fairness (see Blodgett et al. 2020).
+    Potential Harms: 
+        Inequal Utility from NLP Systems, i.e. English Speaker: Benefits from full features (virtual assistant, car navigation, translation, good search), 
+            other speakers use technology with with fewer or worse features, in second language, (Non-native Speaker/Native Speaker Different from Training Data: Experiences issues with pronunciation, mannerisms, etc.)
+        Allocational Harms: Decisions by an NLP system affect life positively/negatively and potentially unfairly.
+            Unfair Positive Allocation: NLP decides who gets a loan or university acceptance.
+            Unfair Negative Allocation: NLP decides who gets arrested due to social media posts.
+            i.e. Facebook mistranslates 'good morning' into 'attack them,' leading to an arrest
+        Stereotyping: System reflects harmful societal biases in its output. i.e. When translating gender-neutral Turkish to English, Google associates he/she pronouns with stereotypically male/female dominated jobs.            
+            Social stereotypes are similarly internalized as associations through natural processes of learning and categorization
+            Protected Attributes/Groups that can be subject to bias include: Gender, Race, Disability, Age, Sexual orientation, Culture, Class, Poverty, Language, Religion, and National origin.
 
+    Bias in Data:
+        Online data is riddled with social stereotypes (e.g., "You're so pretty for a black girl!") 
+        Bias in language: Stereotypes, prejudices, toxic comments, and historical human biases.
+        Human reporting biases: Topics and word frequencies are not a reflection of the real world.
+        Bias in datasets: Data selection/sampling bias, annotator selection bias, and annotators' cognitive biases.
 
+        i.e. Toxicity classification datasets are biased against the LGBTQ community (Dixon et al., 2017)
+            bias can arise from :a combination of (possibly) underspecified annotations guidelines, The positionality of annotators themselves, Different cultural and social norms (See Byrne (2016) and Fazelpour (2020)).
 
+        SOTA NLP tools cannot identify microaggressions: State-of-the-Art (SOTA) NLP tools can fail to identify subtle forms of bias like microaggressions.
+            i.e. Oh, you work at an office? I bet you're a secretary, good for you! (Breitfeller, et al. 2019.)
+            Hate Speech Detection (Perspective API): Unlikely to be perceived as toxic (0.23).
+            Sentiment Analysis (Python NLTK): The text is pos. (Positive).
 
+        Models Do Not Incorporate Socio-Cultural Knowledge: Toxicity classifiers overfit to social attributes overrepresented in training data. They often ignore social and cultural context.
+            i.e. Non-toxic tweets using certain slurs (per Spears, 1998).
+            Wassup, bro? PerspectiveAPI TOXICITY 4% but Wassup N? PerspectiveAPI TOXICITY 87% (Sap et al. 2019)
 
+        Models Overfit to Spurious Artifacts in Data: Models may learn to rely on artifacts that are correlated with a sensitive attribute (Gender, Race) rather than the true meaning/sentiment.
+            i.e. Sentiment prediction with names correlated with race (Kiritchenko S. and Mohammad S. (2018).)
 
+        Models are Not Explainable
+            NLP models are often black boxes, meaning it's hard to understand why certain inputs lead to certain outputs.
+            i.e. A model may correctly classify "you're so pretty!" and "you're ugly!" as positive and negative, respectively
+                But it may fail to flag "you're pretty for your age," which contains a subtle bias, as problematic or toxic (X), without explaining its reasoning
 
+    Detecting Biases In NLP Systems:
+        common techniques: association tests, analysing performanc measures across groups, counterfactual evaluations.
 
+        Word Embedding Association tests(WEAT): want to learn relationship model can learn from embeddings. have two set of target wordds, and two sets of attribute words,. Null hypothesis is no difference between two sets of target words in terms of simlarities to the two set of attribute words.
+            T.S. take mean cosine similarity of one target - mean cos of other.
+            associative biases in word embeddings 2017 paper: Use WEAT to show that word embeddings exhibit human like social biases.
+            extending embeddings association to sentences 2019 paper: used WEAT to measure bias in sentence encoders,, slot words into several semantically bleached sentence templates(finn in the word). templates aredesigned to convey little meaning themselves.
+                ELMo and BERT display less evidence of association bias compared to older (context free) methods.
+
+            Issues w/ Association Tests: Positive predictive ability: It can detect presence of bias, but cannot detect if it’s absence.
+                Representations are trained without explicit bias control mechanisms on naturally occurring text. A lack of evidence of bias is not a lack of bias. 
+                Bias in word embeddings will not necessarily propagate to downstream tasks.
+
+        Analysis Over Error Rates: Loosely speaking, algorithms exhibit impact disparity when outcomes differ across subgroups.
+            One way to identify this disparity in NLP systems is by comparing performance measures (e.g., error rates, false positives, false negatives, etc.) across groups.
+            i.e. 42 white speakers and 73 black speakers; average word error rate (WER) for black speakers was 0.35 compared to 0.19 for white speakers.
+             Similar disparities were observed between predominantly African American cities (in grey) andpredominantly White cities (in white).
+            Cross-lingual Disparities in NLP Tasks: Disparities are even more stark across languages! (Joshi et al. 2020, Blasi et al. 2021) i.e. machine translation to bengali is extremely bad as it does not relate well to other languages.
+
+        Counterfactual Evaluation: 
+            Modify text by flipping protected attributes (gender, race, etc.) and observe differences in model performance.
+            paper: Gender Bias in Coreference Resolution (Rudinger et al., 2018).: Introduce a set of minimal pair sentences that differ only by pronoun gender. 
+
+            VideoBiasEval : video generative model to generate different events, the output videos show strong gender and ethnicity biases of people dominant in these events.
+                another example: If only “Person” is mentioned in the prompt, most likely a white man will be generated. same for indian person, but changes gender when south east asian person. generating dominant class if not mentioned otherwise.
+        
+    Mitigating Bias:
+        imperfct ways: Automatic mitigation, Careful data creation/augmentation: balancing groups, diversifying data, etc., umans in the loop: counterfactually augmented data, feature feedback, etc.
+
+        populat method ~2014: Feature Invariant Learning: 
+            Learn representations that produce accurate classifications while not being good at identifying protected variables (Zemel et al., 2013), learning w/o bias essentially.
+                learn features in but not connecting them with demographic attribtues.
+                Loss function L aims to minimize classification error, minimize reconstruction error, and make the intermediate representations indistinguishable across values of the protected variable.
+                Adversarial training (Ganin and Lempitsky, 2015): Learn representations invariant to protected attributes (for e.g., race).
+                    Uses a gradient reversal layer to train a feature extractor to learn features that are simultaneously good for the main classification task and bad at classifying the protected attribute domain label d.
+                    if classifier cannot classify into demographic groups, then features is not baised, and will not learn towards demogrphic groups; focus on useful infomration for training tasks.
+                    I believe the goal is for the "adversary race" accuracy (for e.g.) to be near 50% (random chance) while the "sentiment" accuracy remains high
+                    issues w/ adv training:
+                        Demographic information can be recovered even after adversarial training (Elazar and Goldberg, 2018).
+
+        Automatic Data Augmentation: programmatically alter text to invert gender bias. combine to balance dist between two attributes.
+            i.e. the doctor ran because he is late becomes the doctor ran because she is late.  Con: No substitutions even if names co-refer to a gendered pronoun.           
+            Zmigrod et al. (2019): Use a Markov random field to infer how the sentence must be modified while altering the grammatical gender of particular nouns to preserve morpho-syntactic agreement.
+
+        Mitigation With Humans In The Loop: 
+            Kaushik et al. (2020; 2021) employ humans to edit documents to make a counterfactual label applicable.
+            Models trained on augmented data are more robust out-of-domain and tend to rely less on spurious patterns.
+
+        Detoxify the Model’s Parameters Directly: Use factor analysis to identify toxic directions in the model parameter space that have high correlations with the preference data Dpref. Use the LM to encode preference data then identify the toxic subspace from attention layer or similar input, and update model to exclude subspace/ Project the model’s parameters out of this subspace ontop of MLP. related to LROA for focusing on low dim vectors to learn best features for task.
+
+    what we are doing wrong: Survey 146 papers analyzing “bias” in NLP systems, Found motivations as often vague, inconsistent, and lacking in normative reasoning.
+        Mismatch between motivations and proposed quantitative techniques for measuring or mitigating “bias”. Papers do not engage with the relevant literature outside of NLP.
+        makes measuing hard.
+        Critiques Of “Bias” Research In NLP (Blodgett et al., 2020)recommends : Ground work in relevant literature outside of NLP.
+            Provide explicit statements of why the system behaviors that are described as “bias” are harmful, in what ways, and to whom
+            Engage with the lived experiences of members of communities affected by NLP systems.
+
+    Well-Intentioned Works Can Have Dual Impacts:
+        Advanced grammar analysis: improve search and educational NLP, but also reinforce prescriptive linguistic norms.
+        Stylometric analysis: help discover provenance of historical documents, but also unmask anonymous political dissenters.
+        Text classification and IR: help identify information of interest, but also aid censors.
+        NLP can be used to identify fake reviews and news, and also to generate them.
+        Even though useful primary use, artifcants of discovery can be used in harmful ways or useful in other fields. These types of problems are difficult to solve, but important to think about, acknowledge and discuss. 
+
+    When are we responsible:
+        Framework for Ethical Responsibility: Based on Berdichevsky and Neuenschwander (1999).
+        If the outcome is Intended:
+            Ethical: Designer is praiseworthy.
+            Unethical: Designer is responsible and at fault.
+        If the outcome is Unintended:
+            Reasonably Predictable:
+                Ethical: Designer is not responsible (or less responsible).
+                Unethical: Designer is responsible and at fault (negligence).
+            Not Reasonably Predictable:
+                Ethical/Unethical: Designer is not responsible.
 
 
 Course: https://junjiehu.github.io/cs769-fall25/lectures/ 
