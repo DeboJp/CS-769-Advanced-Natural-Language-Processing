@@ -1289,4 +1289,99 @@
                 Ethical/Unethical: Designer is not responsible.
 
 
+# LECTURE 24: Language Agents and LLM Programming
+
+
+    Foundations: Reasoning, Memory, and Planning
+        cognitive language agents: has a lm backbone, but lm has access to internal memory and internal reasoning, w/o changes to environment. has internal actions for internal reasoning, but has exteral actions like naive too.
+            action space beyond env action: reasoning: update short-term memory(context window), also has long term memory to read/write for retreieval and learning(model weights, vectore store, self-notes, event flow, etc.)
+                planning (inference-time) algorithm to choose an action from the action space • Environment: receives an action from the agent and provides a reward
+
+        Reasonning: for lms intermediate generation( Chain of thought), for agents we want internal actions(thinking reasonig to change their internal agents state) 
+            interacting with external env and reasoning thoguht helps imrpove outocme accuracy for agent models.
+
+        (Yao et al., 2022.) ReAct: mix of chain of thought and web searching, best for agents.
+            thinking model gives plausible answer but dont know correct or not.
+            act only model searches mulitple time, treads document answers ans true, can find wrong text in retrieved content and return wrong answer.(ireelevant answers, etc.)
+            ReAct: iteractive thinking, ask question - reasons througuh texts, what to expect, finds terms, returns answer.
+        
+        can deploy language angent in embodied(game/video) environment. can instruct model to do tasks in this environment. need interpreter need to map actions to robotic actions, etc. 
+
+        why rasoning good: traditional agents action space defined by environment. React ation space augmented by reasoning, but needs interpreter to tie to actions. also has internal state that it changes itself (understanding via plausible arguemnts and answer checks)
+            Bigger action space -> More capacity, harder decision making • The space of reasoning/language is infinite • LLMs learn reasoning priors by imitating various human reasoning traces (driivng follow what humans do, and avoid what they dont for example)
+
+        Takeaways: Reasoning as internal actions for language agents • Reasoning guides acting & acting updates reasonin
+
+        Memory: 
+        retrieval and RAG:
+            We can think of the retrieval corpus as “read-only” long-term memory • Written by others (e.g., Wikipedia editors), not the agent itself
+            Limitations :• Can only live “others’ experience”, which might not be optimal for the agent • The way corpus is written might not be optimal for agent usage 
+            • Agent memory: also be able to autonomously write to it!
+
+        Long term memory - eposodic memory - store experiences with RL and rewards. ()
+            semantic memory - stores knowledge implicitly stored during preraining. (read/write: LM either in internal pretrained parameters, or though rag fom datastore/ )
+            procedural memory - stores skills implicitly stored during pretraining. (write: coding baseed skills, read: embedding retreival)
+
+        Where does a cognitive language agent store long-term memory? (llm parameters, and data store)
+        Where does a agent store short-term memory? (content window - prompt)
+        What’s the difference between external environment vs internal memory then? (Memory contains agent-specific contents (experiences, knowledge, skills) • Environment is independent of all agents)
+
+        Planning(simplified): given goal, decised on a seq of actions that will lead to a state that passes the goal test g. (think external actions finalization - reasoning is the internal part)
+            • Increasing expressiveness in goal specification, e.g., in natural language as opposed to formal language
+            • Substantially expanded or open-ended action space
+            • Increasing difficulty in automated goal test 
+        greedy tree search with real interaction for planning, easy to implement - fast, but greedy. check which branches result better and keep exploring.
+            challenges - many actions are state changing and irreversiable doesnt allow back tracking (i.e. not easy to cancel order, need OPT, etd,) inference time exploration could be slow and costly. 
+            Train a world model that knows what is going to happen: RL model to estimate performing certain actions, understand irreversible actions for safer, faster, systematic search.
+
+    LLM Coding Agents for Software Development:
+        majority of swe cycle is communication 35% while codign is 15%, debuggin 15% 2nd largest groups.
+        steps towards automation: manual - Copilot code completion - Copilot refactoring - test gen/code porting - Devin end-end devemopment(based on docs) - full person?
+
+        challenges in developing agents:
+            • Defining the Environment - need to interact w github, jira, docs, slack. coding/testing but also browsing /setup too.
+            • Designing an Observations/Actions
+            • Code Generation (atomic actions)
+            • File Localization (exploration)
+            • Planning and Error Recovery - not destroy env
+            • Safety - avoid malicious actions to users
+
+        Data Science Notebooks: ARCADE (can interact with jupyter with natural language and python code)(Yin et al. 2022) incremental implementation • Allows evaluation of code in context
+        Dataset: SWEBench (Jiminez et al. 2023) • Issues from GitHub + codebases -> pull request. Requires long-context understanding, precise implementation
+
+            Action Space:
+                Coding Agents
+                    • Understand repository structure
+                    • Read in existing code
+                    • Modify or produce code
+                    • Run code and debug
+        
+        CodeAct (Wang et al. 2024) Interact w/ the environment through code. Can execute bash commands, Jupyter commands • Faster resolution, higher success than direct tool use
+
+        SWE-Agent (Yang+Jimenez et al. 2024) • Define specialized tools that make it possible to efficiently explore repositories and edit code
+
+        OpenHands (Wang et al. 2024) open source agentic fraeworks: Defines “event stream” for coding, execution, and browsing actions/ observations 
+             Implements SWEagents style actions as “agent skills” that can be called
+
+        LLM based File Localization: finding correct files given user intent, which js file should I modify, analogous to env understandng/exploration problems in other agents.
+            solutions options: 
+                offload to users; 
+                prompt agents w/ search tools; 
+                A-priori Map the Repo(Create a map of the repo and prompt agent with it 
+                    • Aider repomap creates a tree-structured map of the repo 
+                    • Agentless (Xia et al. 2024) does a hierarchical search for every issue(stringbased search)); 
+                Retrievalaugmented Code Generation(vector embedding search - Retrieve similar code, and fill it in with a retrieval-augmented LM 
+                    (e.g. CodeRAGBench, Wang+Asai et al. 2024) Particularly, in code there is also documentation, which can be retrieved (Zhou et al. 2022) 
+                    but Unsolved issue: when to perform RAG in agent)
+
+        Planning and Error Recovery:
+            Agentless (Xie et al. 2024) has a hard-coded progress of: File Localization, Function Localization, Patch Generation, Patch Application.
+            LLM-generated planning step, then one or more executors • CodeR [Chen et al. 2024]
+    
+        Coding Agents: Takeaway
+            Copilots already very useful, code agents getting there
+            Current challenges: code LLMs, editing, localization, planning, safety
+            Future directions: Agentic training methods, Human-in-the-loop, Broader software tasks than coding.
+
+End of Course Lectures: Final Project presentations in-person.
 Course: https://junjiehu.github.io/cs769-fall25/lectures/ 
